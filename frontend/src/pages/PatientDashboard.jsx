@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Camera, MessageCircle, Mic, Calendar, Clock } from 'lucide-react';
+import { Camera, MessageCircle, Mic, Calendar, Clock, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import './PatientDashboard.css';
 
 const PatientDashboard = () => {
   const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
+  const [modalFeature, setModalFeature] = useState('');
 
   // Get patient name from profile
   const patientName = user?.profile?.name?.split(' ')[0] || 'Patient';
@@ -42,6 +44,16 @@ const PatientDashboard = () => {
     });
   };
 
+  const handleComingSoon = (featureName) => {
+    setModalFeature(featureName);
+    setShowComingSoonModal(true);
+  };
+
+  const closeModal = () => {
+    setShowComingSoonModal(false);
+    setModalFeature('');
+  };
+
   return (
     <div className="patient-dashboard-container">
       {/* Header Section */}
@@ -69,7 +81,7 @@ const PatientDashboard = () => {
           {/* View Photos Button */}
           <button
             className="action-button photos-button"
-            onClick={() => console.log('Navigate to Photos')}
+            onClick={() => handleComingSoon('View Photos')}
             aria-label="View your photos and memories"
           >
             <div className="button-icon">
@@ -82,7 +94,7 @@ const PatientDashboard = () => {
           {/* Talk to Companion Button */}
           <button
             className="action-button companion-button"
-            onClick={() => console.log('Navigate to Chatbot')}
+            onClick={() => handleComingSoon('Talk to Companion')}
             aria-label="Talk to your memory companion"
           >
             <div className="button-icon">
@@ -95,7 +107,7 @@ const PatientDashboard = () => {
           {/* Add Memory Button */}
           <button
             className="action-button memory-button"
-            onClick={() => console.log('Record voice note')}
+            onClick={() => handleComingSoon('Add Memory')}
             aria-label="Add a new memory"
           >
             <div className="button-icon">
@@ -113,6 +125,26 @@ const PatientDashboard = () => {
           </div>
         </div>
       </main>
+
+      {/* Coming Soon Modal */}
+      {showComingSoonModal && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={closeModal} aria-label="Close modal">
+              <X size={24} />
+            </button>
+            <div className="modal-icon">🚀</div>
+            <h2 className="modal-title">Coming Soon!</h2>
+            <p className="modal-description">
+              The <strong>{modalFeature}</strong> feature is currently under development.
+              We're working hard to bring you this amazing functionality soon!
+            </p>
+            <button className="modal-button" onClick={closeModal}>
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
