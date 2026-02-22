@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Brain shape -->
+  <path d="M50 20 C35 20 25 30 25 40 C25 45 27 49 30 52 C28 54 27 57 27 60 C27 68 33 75 42 77 C43 78 45 79 47 79 C47 82 49 85 52 87 C55 89 58 90 62 89 C65 88 68 86 70 83 C72 86 75 88 78 89 C81 90 84 89 87 87 C90 85 92 82 92 79 C94 79 96 78 97 77 C106 75 112 68 112 60 C112 57 111 54 109 52 C112 49 114 45 114 40 C114 30 104 20 89 20 C84 20 79 22 75 25 C71 22 66 20 60 20 C57 20 54 20 50 20 Z"
+        fill="url(#brainGradient)"
+        transform="translate(-20, 5) scale(0.9)"/>
+
+  <!-- Heart accent -->
+  <path d="M50 45 L47 42 C45 40 42 40 40 42 C38 44 38 47 40 49 L50 59 L60 49 C62 47 62 44 60 42 C58 40 55 40 53 42 Z"
+        fill="#ff6b9d"
+        transform="scale(0.35) translate(65, 75)"/>
+</svg>

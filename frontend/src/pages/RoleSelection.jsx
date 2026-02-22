@@ -1,10 +1,26 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Heart, Users } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import './RoleSelection.css';
 
 const RoleSelection = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
+  // Auto-redirect based on user role
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'patient') {
+        navigate('/patient-dashboard', { replace: true });
+      } else if (user.role === 'caregiver') {
+        navigate('/caregiver-dashboard', { replace: true });
+      }
+      // Admin can see role selection to choose which view to access
+    }
+  }, [user, navigate]);
+
+  // Show role selection only for admins or as fallback
   return (
     <div className="role-selection-container">
       <header className="app-header">

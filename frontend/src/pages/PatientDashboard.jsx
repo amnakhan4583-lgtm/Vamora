@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Camera, MessageCircle, Mic, Calendar, Clock } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import './PatientDashboard.css';
 
 const PatientDashboard = () => {
+  const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [patientName] = useState('Sarah'); // This would come from backend/auth
+
+  // Get patient name from profile
+  const patientName = user?.profile?.name?.split(' ')[0] || 'Patient';
 
   useEffect(() => {
     const timer = setInterval(() => {

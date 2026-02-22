@@ -161,10 +161,80 @@ const logout = async (req, res) => {
   });
 };
 
+/**
+ * Request password reset
+ * POST /api/v1/auth/forgot-password
+ */
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const result = await authService.requestPasswordReset(email);
+
+    res.status(200).json({
+      success: true,
+      message: result.message,
+      // Remove resetToken from response in production
+      ...(process.env.NODE_ENV !== 'production' && { resetToken: result.resetToken })
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Reset password
+ * POST /api/v1/auth/reset-password
+ */
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!token || !newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token and new password are required'
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters long'
+      });
+    }
+
+    const result = await authService.resetPassword(token, newPassword);
+
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  } catch (error) {
+    if (error.message.includes('Invalid or expired') ||
+        error.message.includes('has expired')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   getCurrentUser,
   refresh,
-  logout
+  logout,
+  forgotPassword,
+  resetPassword
 };

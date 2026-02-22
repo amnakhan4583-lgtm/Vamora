@@ -1,5 +1,6 @@
 const db = require('../../models');
 const { generateAccessToken, generateRefreshToken } = require('../config/jwt');
+const crypto = require('crypto');
 
 /**
  * Authentication Service
@@ -178,9 +179,95 @@ const refreshAccessToken = async (refreshToken) => {
   }
 };
 
+/**
+ * Request password reset
+ * @param {String} email - User email
+ * @returns {Object} Reset token (in production, send via email)
+ */
+const requestPasswordReset = async (email) => {
+  // Find user by email
+  const user = await db.User.findOne({ where: { email } });
+
+  if (!user) {
+    // Don't reveal if email exists for security
+    return { message: 'If the email exists, a reset link will be sent.' };
+  }
+
+  // Generate reset token (32 random bytes as hex)
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // Token expires in 1 hour
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+  // Invalidate any existing unused tokens for this email
+  await db.PasswordReset.update(
+    { used: true },
+    { where: { email, used: false } }
+  );
+
+  // Create new password reset record
+  await db.PasswordReset.create({
+    email,
+    token: resetToken,
+    expiresAt,
+    used: false
+  });
+
+  // In production, send email with reset link here
+  // For now, return the token (ONLY FOR DEV/TESTING)
+  return {
+    message: 'If the email exists, a reset link will be sent.',
+    // Remove this in production - only for testing
+    resetToken: resetToken
+  };
+};
+
+/**
+ * Reset password using token
+ * @param {String} token - Reset token
+ * @param {String} newPassword - New password
+ * @returns {Object} Success message
+ */
+const resetPassword = async (token, newPassword) => {
+  // Find valid reset token
+  const passwordReset = await db.PasswordReset.findOne({
+    where: { token, used: false }
+  });
+
+  if (!passwordReset) {
+    throw new Error('Invalid or expired reset token');
+  }
+
+  // Check if token has expired
+  if (passwordReset.isExpired()) {
+    throw new Error('Reset token has expired');
+  }
+
+  // Find user by email
+  const user = await db.User.findOne({
+    where: { email: passwordReset.email }
+  });
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // Update user password (will be hashed by model hook)
+  user.password = newPassword;
+  await user.save();
+
+  // Mark token as used
+  passwordReset.used = true;
+  await passwordReset.save();
+
+  return { message: 'Password reset successful' };
+};
+
 module.exports = {
   register,
   login,
   getCurrentUser,
-  refreshAccessToken
+  refreshAccessToken,
+  requestPasswordReset,
+  resetPassword
 };

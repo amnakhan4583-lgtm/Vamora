@@ -1,36 +1,72 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Lock, Mail, Heart, Brain } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Lock, Mail, Heart, Brain, AlertCircle } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login, isAuthenticated, user } = useAuth();
 
-  // Mock credentials pre-filled
   const [formData, setFormData] = useState({
-    email: 'demo@vamora.com',
-    password: 'demo123'
+    email: '',
+    password: ''
   });
 
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'patient') {
+        navigate('/patient-dashboard');
+      } else if (user.role === 'caregiver') {
+        navigate('/caregiver-dashboard');
+      } else if (user.role === 'admin') {
+        navigate('/role-selection');
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.name]: e.target.value
+      [e.target.name]: e.target.value
     });
+    // Clear error when user types
+    if (error) setError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await login(formData.email, formData.password);
+      const userRole = response.data.user.role;
+
+      // Navigate based on user role
+      if (userRole === 'patient') {
+        navigate('/patient-dashboard');
+      } else if (userRole === 'caregiver') {
+        navigate('/caregiver-dashboard');
+      } else if (userRole === 'admin') {
+        // Admin can choose which view to see
+        navigate('/role-selection');
+      } else {
+        navigate('/role-selection');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(
+        err.response?.data?.message ||
+        'Login failed. Please check your credentials and try again.'
+      );
+    } finally {
       setIsLoading(false);
-      // Navigate to role selection after successful login
-      navigate('/role-selection');
-    }, 800);
+    }
   };
 
   return (
@@ -45,6 +81,14 @@ const Login = () => {
           <h1 className="login-title">Virtual Memory Companion</h1>
           <p className="login-subtitle">Supporting Memory, Strengthening Connection</p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="error-message">
+            <AlertCircle size={20} />
+            <span>{error}</span>
+          </div>
+        )}
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="login-form">
@@ -89,7 +133,7 @@ const Login = () => {
               <input type="checkbox" defaultChecked />
               <span>Remember me</span>
             </label>
-            <a href="#" className="forgot-link">Forgot password?</a>
+            <Link to="/forgot-password" className="forgot-link">Forgot password?</Link>
           </div>
 
           <button
@@ -103,16 +147,16 @@ const Login = () => {
 
         {/* Demo Credentials Info */}
         <div className="demo-info">
-          <p className="demo-title">🔑 Demo Credentials (Pre-filled)</p>
+          <p className="demo-title">🔑 Test Credentials (Available for Testing)</p>
           <div className="demo-credentials">
-            <p><strong>Email:</strong> demo@vamora.com</p>
-            <p><strong>Password:</strong> demo123</p>
+            <p><strong>Patient:</strong> sarah.patient@vamora.com / testpass123</p>
+            <p><strong>Caregiver:</strong> amna.caregiver@vamora.com / password123</p>
           </div>
         </div>
 
         {/* Footer */}
         <div className="login-footer">
-          <p>Don't have an account? <a href="#" className="signup-link">Sign Up</a></p>
+          <p>Don't have an account? <Link to="/register" className="signup-link">Sign Up</Link></p>
           <p className="privacy-text">Protected by industry-standard encryption</p>
         </div>
       </div>
@@ -128,3 +172,4 @@ const Login = () => {
 };
 
 export default Login;
+
