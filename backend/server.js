@@ -62,15 +62,15 @@ app.get('/api', (req, res) => {
   });
 });
 
-// Import routes (will be added later)
-// const authRoutes = require('./src/routes/authRoutes');
+// Import routes
+const authRoutes = require('./src/routes/authRoutes');
 // const userRoutes = require('./src/routes/userRoutes');
 // const mediaRoutes = require('./src/routes/mediaRoutes');
 // const chatRoutes = require('./src/routes/chatRoutes');
 // const caregiverRoutes = require('./src/routes/caregiverRoutes');
 
 // Use routes
-// app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/auth', authRoutes);
 // app.use('/api/v1/users', userRoutes);
 // app.use('/api/v1/media', mediaRoutes);
 // app.use('/api/v1/chat', chatRoutes);
