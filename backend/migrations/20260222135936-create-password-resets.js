@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up (queryInterface, Sequelize) {
-    await queryInterface.createTable('PasswordResets', {
+    await queryInterface.createTable('passwordresets', {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -38,12 +38,12 @@ module.exports = {
     });
 
     // Add index on token for faster lookups
-    await queryInterface.addIndex('PasswordResets', ['token']);
+    await queryInterface.addIndex('passwordresets', ['token']);
     // Add index on email for faster lookups
-    await queryInterface.addIndex('PasswordResets', ['email']);
+    await queryInterface.addIndex('passwordresets', ['email']);
   },
 
   async down (queryInterface, Sequelize) {
-    await queryInterface.dropTable('PasswordResets');
+    await queryInterface.dropTable('passwordresets');
   }
 };
