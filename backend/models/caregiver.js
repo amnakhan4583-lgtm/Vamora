@@ -20,7 +20,8 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'Caregiver',
-    tableName: 'caregivers', // Explicitly set table name to lowercase plural
+    tableName: 'caregivers',
+    underscored: true,
   });
   return Caregiver;
 };

@@ -21,7 +21,8 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'ChatHistory',
-    tableName: 'chathistories',
+    tableName: 'chat_histories',
+    underscored: true,
   });
   return ChatHistory;
 };
