@@ -1,113 +1,242 @@
  .gallery-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem 1rem;
-  padding-top: 1rem;
+  background: linear-gradient(to bottom, #ede7f6 0%, #e8eaf6 50%, #f5f5f5 100%);
+  padding: 2rem 1rem 3rem 1rem;
   font-family: 'Segoe UI', sans-serif;
 }
- .gallery-header {
+
+.gallery-header {
   text-align: center;
   margin-bottom: 2rem;
-  position: relative;
   padding-top: 1rem;
 }
-.back-btn {
-  position: absolute;
-  left: 0;
-  top: 0;
-  background: rgba(255,255,255,0.2);
-  color: white;
-  border: 2px solid rgba(255,255,255,0.5);
-  padding: 0.6rem 1.2rem;
-  border-radius: 25px;
-  font-size: 1rem;
-  cursor: pointer;
+
+.gallery-title {
+  color: #2d1f3d;
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem 0;
+  letter-spacing: 0.5px;
 }
-.back-btn:hover { background: rgba(255,255,255,0.35); }
-.gallery-title { color: white; font-size: 2.2rem; font-weight: 700; margin: 0 0 0.5rem 0; }
-.gallery-subtitle { color: rgba(255,255,255,0.85); font-size: 1.1rem; margin: 0; }
-.upload-area {
-  background: rgba(255,255,255,0.15);
-  border: 3px dashed rgba(255,255,255,0.6);
-  border-radius: 20px;
-  padding: 2.5rem;
-  text-align: center;
-  max-width: 600px;
-  margin: 0 auto 2rem auto;
-  transition: all 0.3s ease;
+
+.gallery-subtitle {
+  color: #5a4a7a;
+  font-size: 1.1rem;
+  margin: 0;
 }
-.upload-area.dragging { background: rgba(255,255,255,0.3); border-color: white; }
-.upload-icon { font-size: 3rem; margin-bottom: 1rem; }
-.upload-text { color: white; font-size: 1.2rem; font-weight: 600; margin: 0 0 0.3rem 0; }
-.upload-subtext { color: rgba(255,255,255,0.7); margin: 0.3rem 0; }
-.upload-btn {
-  display: inline-block;
+
+.upload-section {
+  max-width: 650px;
+  margin: 0 auto 2.5rem auto;
   background: white;
-  color: #764ba2;
-  padding: 0.8rem 2rem;
+  border: 2px dashed #9575cd;
+  border-radius: 20px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(100, 80, 160, 0.1);
+}
+
+.upload-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.caption-input-field {
+  width: 100%;
+  padding: 0.9rem 1.2rem;
+  border-radius: 12px;
+  border: 2px solid #ce93d8;
+  background: #fafafa;
+  font-size: 1rem;
+  font-family: 'Segoe UI', sans-serif;
+  color: #2d1f3d;
+  box-sizing: border-box;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.caption-input-field:focus {
+  border-color: #764ba2;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.15);
+}
+
+.caption-input-field::placeholder {
+  color: #bbb;
+}
+
+.upload-btn {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  color: white;
+  border: none;
+  padding: 0.9rem 2.2rem;
   border-radius: 25px;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  margin-top: 0.8rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(118, 75, 162, 0.35);
 }
-.upload-btn:hover { background: #f0e6ff; }
+
+.upload-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(118, 75, 162, 0.45);
+}
+
+.caption-error {
+  color: #c0392b;
+  background: #fde8e8;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
 .photo-count {
   text-align: center;
-  color: white;
-  font-size: 1.1rem;
+  color: #4a3570;
+  font-size: 1.05rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
 }
-.empty-state { text-align: center; padding: 3rem; color: rgba(255,255,255,0.8); }
-.empty-icon { font-size: 4rem; margin-bottom: 1rem; }
-.empty-text { font-size: 1.4rem; font-weight: 600; margin: 0 0 0.5rem 0; color: white; }
-.empty-subtext { font-size: 1rem; margin: 0; }
-.photo-list { display: flex; flex-direction: column; gap: 1.5rem; max-width: 750px; margin: 0 auto; }
-.photo-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
-.photo-image-wrapper { width: 100%; max-height: 350px; overflow: hidden; background: #f0f0f0; }
-.photo-image { width: 100%; height: 100%; object-fit: cover; display: block; }
-.photo-details { padding: 1.5rem; }
-.photo-meta { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 1rem; }
-.photo-date { color: #764ba2; font-size: 0.95rem; font-weight: 600; }
-.photo-name { color: #888; font-size: 0.85rem; word-break: break-all; }
-.caption-section { margin-bottom: 1rem; }
-.caption-label { display: block; font-size: 1rem; font-weight: 600; color: #444; margin-bottom: 0.5rem; }
-.caption-input {
-  width: 100%;
-  padding: 0.8rem;
-  border: 2px solid #e0d0f0;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-family: 'Segoe UI', sans-serif;
-  color: #333;
-  resize: vertical;
-  box-sizing: border-box;
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
 }
-.caption-input:focus { outline: none; border-color: #764ba2; }
-.ai-badge {
-  background: #f0e6ff;
-  color: #764ba2;
-  padding: 0.5rem 1rem;
-  border-radius: 25px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  display: inline-block;
+
+.empty-icon {
+  font-size: 4rem;
   margin-bottom: 1rem;
 }
-.delete-btn {
-  background: #fff0f0;
-  color: #e53e3e;
-  border: 2px solid #fed7d7;
-  padding: 0.6rem 1.2rem;
+
+.empty-text {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #2d1f3d;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-subtext {
+  font-size: 1rem;
+  color: #5a4a7a;
+  margin: 0;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.photo-card {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(100, 80, 140, 0.12);
+  border: 1px solid rgba(180, 160, 220, 0.25);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.photo-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 36px rgba(100, 80, 140, 0.2);
+}
+
+.photo-image {
+  width: 100%;
+  height: 220px;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-details {
+  padding: 1.2rem;
+}
+
+.photo-caption {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #2d1f3d;
+  margin: 0 0 0.4rem 0;
+}
+
+.photo-date {
+  font-size: 0.82rem;
+  color: #7b5ea7;
+  margin: 0 0 1rem 0;
+  font-style: italic;
+}
+
+.voice-player {
+  width: 100%;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+}
+
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.voice-btn {
+  padding: 0.65rem 1rem;
   border-radius: 25px;
   font-size: 0.95rem;
-  cursor: pointer;
   font-weight: 600;
+  cursor: pointer;
+  border: 2px solid #764ba2;
+  background: #f0e6ff;
+  color: #764ba2;
+  transition: all 0.2s;
 }
-.delete-btn:hover { background: #fed7d7; }
+
+.voice-btn:hover {
+  background: #764ba2;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.voice-btn.recording {
+  background: #cc0000;
+  border-color: #cc0000;
+  color: white;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.delete-btn {
+  padding: 0.65rem 1rem;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid #e53935;
+  background: #fff0f0;
+  color: #e53935;
+  transition: all 0.2s;
+}
+
+.delete-btn:hover {
+  background: #e53935;
+  color: white;
+  border-color: #e53935;
+  transform: translateY(-1px);
+}
+
 @media (max-width: 600px) {
-  .gallery-title { font-size: 1.6rem; margin-top: 3rem; }
-  .back-btn { font-size: 0.85rem; padding: 0.5rem 1rem; }
-  .photo-details { padding: 1rem; }
+  .gallery-title { font-size: 1.7rem; }
+  .photo-grid { grid-template-columns: 1fr; }
+  .upload-section { padding: 1.5rem 1rem; }
 }

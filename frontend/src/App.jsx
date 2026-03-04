@@ -9,6 +9,9 @@ import ResetPassword from './pages/ResetPassword';
 import RoleSelection from './pages/RoleSelection';
 import PatientDashboard from './pages/PatientDashboard';
 import PhotoGallery from './pages/PhotoGallery';
+import MoodCheckin from './pages/MoodCheckin';
+import TalkToCompanion from './pages/TalkToCompanion';
+import CaregiverDashboard from './pages/CaregiverDashboard';
 import './App.css';
 
 function App() {
@@ -25,10 +28,13 @@ function App() {
           <Route path="/role-selection" element={<ProtectedRoute><RoleSelection /></ProtectedRoute>} />
           <Route path="/patient-dashboard" element={<ProtectedRoute allowedRoles={['patient']}><PatientDashboard /></ProtectedRoute>} />
           <Route path="/photo-gallery" element={<ProtectedRoute allowedRoles={['patient']}><PhotoGallery /></ProtectedRoute>} />
-          <Route path="/caregiver-dashboard" element={<ProtectedRoute allowedRoles={['caregiver']}><div style={{padding: '2rem', textAlign: 'center', fontSize: '2rem'}}>Caregiver Dashboard - Coming Soon</div></ProtectedRoute>} />
+          <Route path="/mood-checkin" element={<ProtectedRoute allowedRoles={['patient']}><MoodCheckin /></ProtectedRoute>} />
+          <Route path="/talk-to-companion" element={<ProtectedRoute allowedRoles={['patient']}><TalkToCompanion /></ProtectedRoute>} />
+          <Route path="/caregiver-dashboard" element={<ProtectedRoute allowedRoles={['caregiver']}><CaregiverDashboard /></ProtectedRoute>} />
         </Routes>
       </Router>
     </AuthProvider>
   );
 }
+
 export default App;

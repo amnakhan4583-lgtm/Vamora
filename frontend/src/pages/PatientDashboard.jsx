@@ -32,11 +32,6 @@ const PatientDashboard = () => {
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
 
-  const handleComingSoon = (featureName) => {
-    setModalFeature(featureName);
-    setShowComingSoonModal(true);
-  };
-
   const closeModal = () => {
     setShowComingSoonModal(false);
     setModalFeature('');
@@ -81,19 +76,19 @@ const PatientDashboard = () => {
           {/* 2nd - Talk to Companion */}
           <button
             className="action-button companion-button"
-            onClick={() => handleComingSoon('Talk to Companion')}
+            onClick={() => navigate('/talk-to-companion')}
             aria-label="Talk to your memory companion"
           >
             <div className="button-icon">
               <MessageCircle size={64} strokeWidth={1.5} />
             </div>
             <h3 className="button-title">Talk to Companion</h3>
-            <p className="button-description">Chat about your memories</p>
+            <p className="button-description">Chat with Cara about your memories</p>
           </button>
 
           {/* 3rd - Mood Check-in */}
           <button
-            className="action-button mood-button"
+            className="action-button memory-button"
             onClick={() => navigate('/mood-checkin')}
             aria-label="Check in your mood"
           >
@@ -122,7 +117,7 @@ const PatientDashboard = () => {
             <div className="modal-icon">🚀</div>
             <h2 className="modal-title">Coming Soon!</h2>
             <p className="modal-description">
-              The <strong>{modalFeature}</strong> feature is currently under development.
+              <strong>{modalFeature}</strong> feature is currently under development.
             </p>
             <button className="modal-button" onClick={closeModal}>Got it!</button>
           </div>

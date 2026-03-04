@@ -12,7 +12,12 @@
     "db:reset": "sequelize db:migrate:undo:all && sequelize db:migrate",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["alzheimers", "memory", "healthcare", "ai"],
+  "keywords": [
+    "alzheimers",
+    "memory",
+    "healthcare",
+    "ai"
+  ],
   "author": "Vamora Team",
   "license": "MIT",
   "dependencies": {
@@ -24,10 +29,11 @@
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
-    "multer": "^2.0.2",
+    "multer": "^2.1.0",
     "pg": "^8.18.0",
     "pg-hstore": "^2.3.4",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14",

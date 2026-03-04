@@ -1,41 +1,36 @@
-require('dotenv').config();
+ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 
-// Initialize Express app
 const app = express();
 
-// Environment variables
 const PORT = process.env.PORT || 5000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Security middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  contentSecurityPolicy: false,
+}));
 
-// CORS configuration
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true
 }));
 
-// Body parser middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// HTTP request logger
 if (NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
   app.use(morgan('combined'));
 }
 
-// Serve static files (uploaded media)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -45,7 +40,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API routes
 app.get('/api', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -55,28 +49,28 @@ app.get('/api', (req, res) => {
       health: '/health',
       auth: '/api/v1/auth',
       users: '/api/v1/users',
-      media: '/api/v1/media',
-      chat: '/api/v1/chat',
+      photos: '/api/v1/photos',
+      moods: '/api/v1/moods',
+      companion: '/api/v1/companion',
       caregiver: '/api/v1/caregiver'
     }
   });
 });
 
-// Import routes
 const authRoutes = require('./src/routes/authRoutes');
 const userRoutes = require('./src/routes/userRoutes');
-// const mediaRoutes = require('./src/routes/mediaRoutes');
-// const chatRoutes = require('./src/routes/chatRoutes');
-// const caregiverRoutes = require('./src/routes/caregiverRoutes');
+const photoRoutes = require('./src/routes/photos');
+const caregiverRoutes = require('./src/routes/caregiverRoutes');
+const moodRoutes = require('./src/routes/moodRoutes');
+const companionRoutes = require('./src/routes/companionRoutes');
 
-// Use routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
-// app.use('/api/v1/media', mediaRoutes);
-// app.use('/api/v1/chat', chatRoutes);
-// app.use('/api/v1/caregiver', caregiverRoutes);
+app.use('/api/v1/photos', photoRoutes);
+app.use('/api/v1/caregiver', caregiverRoutes);
+app.use('/api/v1/moods', moodRoutes);
+app.use('/api/v1/companion', companionRoutes);
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     status: 'error',
@@ -84,13 +78,10 @@ app.use((req, res) => {
   });
 });
 
-// Global error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal server error';
-
   res.status(statusCode).json({
     status: 'error',
     message: message,
@@ -98,7 +89,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log('============================================');
   console.log('  Virtual Memory Companion - Backend API');
