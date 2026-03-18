@@ -1,3 +1,4 @@
+ 
  import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import './PhotoGallery.css';
@@ -168,3 +169,5 @@ export default function PhotoGallery() {
     </div>
   );
 }
+
+
