@@ -1,5 +1,4 @@
- 
- import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import './PhotoGallery.css';
 
@@ -9,6 +8,7 @@ export default function PhotoGallery() {
   const [captionError, setCaptionError] = useState('');
   const [recording, setRecording] = useState(null);
   const [mediaRec, setMediaRec] = useState(null);
+  const [previewPhoto, setPreviewPhoto] = useState(null);
   const fileInput = useRef();
 
   useEffect(() => { fetchPhotos(); }, []);
@@ -133,6 +133,8 @@ export default function PhotoGallery() {
                 src={getImageUrl(photo.filename)}
                 alt={photo.caption}
                 className="photo-image"
+                style={{ cursor: 'pointer' }}
+                onClick={() => setPreviewPhoto(photo)}
                 onError={e => { e.target.src = 'https://via.placeholder.com/280x220?text=Photo'; }}
               />
               <div className="photo-details">
@@ -154,7 +156,7 @@ export default function PhotoGallery() {
                     </button>
                   ) : (
                     <button className="voice-btn" onClick={() => startRecording(photo.id)}>
-                      🎙 Add a Memory Note
+                      {photo.voiceNoteUrl ? '🎙 Replace Memory Note' : '🎙 Add a Memory Note'}
                     </button>
                   )}
                   <button className="delete-btn" onClick={() => handleDelete(photo.id)}>
@@ -166,8 +168,59 @@ export default function PhotoGallery() {
           ))}
         </div>
       )}
+
+      {/* Photo Preview Modal */}
+      {previewPhoto && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.85)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center',
+            zIndex: 1000, padding: '1rem'
+          }}
+          onClick={() => setPreviewPhoto(null)}
+        >
+          <div
+            style={{
+              background: 'white', borderRadius: '20px', overflow: 'hidden',
+              maxWidth: '90vw', maxHeight: '90vh', position: 'relative',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)', display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setPreviewPhoto(null)}
+              style={{
+                position: 'absolute', top: '0.75rem', right: '0.75rem',
+                background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none',
+                width: '36px', height: '36px', borderRadius: '50%',
+                fontSize: '1rem', cursor: 'pointer', zIndex: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >✕</button>
+            <img
+              src={getImageUrl(previewPhoto.filename)}
+              alt={previewPhoto.caption}
+              style={{
+                width: '100%', maxHeight: '70vh',
+                objectFit: 'contain', background: '#1a1a2e', display: 'block'
+              }}
+            />
+            <div style={{ padding: '1.2rem 1.5rem', background: 'white' }}>
+              <p style={{ fontSize: '1.2rem', fontWeight: '700', color: '#2d1f3d', margin: '0 0 0.4rem 0' }}>
+                {previewPhoto.caption}
+              </p>
+              <p style={{ fontSize: '0.85rem', color: '#7b5ea7', margin: 0, fontStyle: 'italic' }}>
+                {new Date(previewPhoto.takenAt).toLocaleDateString('en-US', {
+                  year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
-
-
