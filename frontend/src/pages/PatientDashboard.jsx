@@ -1,21 +1,32 @@
- import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Camera, MessageCircle, Smile, Calendar, Clock, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
 import './PatientDashboard.css';
 
 const PatientDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
-  const [modalFeature, setModalFeature] = useState('');
+  const [appointments, setAppointments] = useState([]);
   const patientName = user?.profile?.name?.split(' ')[0] || 'Patient';
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => { fetchAppointments(); }, []);
+
+  const fetchAppointments = async () => {
+    try {
+      const { data } = await api.get('/caregiver/my-appointments');
+      setAppointments(data);
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
+    }
+  };
 
   const getGreeting = () => {
     const hour = currentTime.getHours();
@@ -32,9 +43,31 @@ const PatientDashboard = () => {
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
 
-  const closeModal = () => {
-    setShowComingSoonModal(false);
-    setModalFeature('');
+  const formatAppointmentDate = (date) => new Date(date).toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+
+  const isToday = (date) => {
+    const d = new Date(date);
+    const today = new Date();
+    return d.getDate() === today.getDate() &&
+      d.getMonth() === today.getMonth() &&
+      d.getFullYear() === today.getFullYear();
+  };
+
+  const isTomorrow = (date) => {
+    const d = new Date(date);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return d.getDate() === tomorrow.getDate() &&
+      d.getMonth() === tomorrow.getMonth() &&
+      d.getFullYear() === tomorrow.getFullYear();
+  };
+
+  const getAppointmentLabel = (date) => {
+    if (isToday(date)) return { label: 'Today', color: '#e53935' };
+    if (isTomorrow(date)) return { label: 'Tomorrow', color: '#fb8c00' };
+    return { label: null, color: '#1976d2' };
   };
 
   return (
@@ -55,12 +88,40 @@ const PatientDashboard = () => {
         </div>
       </header>
 
+      {/* Appointment Reminders */}
+      {appointments.length > 0 && (
+        <div className="appointments-section">
+          <h2 className="appointments-title">Upcoming Appointments</h2>
+          <div className="appointments-list">
+            {appointments.map(a => {
+              const { label, color } = getAppointmentLabel(a.appointmentDate);
+              return (
+                <div key={a.id} className="appointment-card" style={{ borderLeft: `4px solid ${color}` }}>
+                  <div className="appointment-icon">📋</div>
+                  <div className="appointment-info">
+                    <p className="appointment-title">{a.title}</p>
+                    {a.doctorName && <p className="appointment-sub">{a.doctorName}</p>}
+                    {a.appointmentType && <p className="appointment-sub">{a.appointmentType}</p>}
+                    <p className="appointment-date" style={{ color }}>
+                      {formatAppointmentDate(a.appointmentDate)}
+                    </p>
+                  </div>
+                  {label && (
+                    <div className="appointment-badge" style={{ background: color }}>
+                      {label}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <main className="dashboard-main">
         <h2 className="section-title">My Memory Lane</h2>
 
         <div className="action-buttons-grid">
-
-          {/* 1st - My Memories */}
           <button
             className="action-button photos-button"
             onClick={() => navigate('/photo-gallery')}
@@ -73,7 +134,6 @@ const PatientDashboard = () => {
             <p className="button-description">View and record your cherished memories</p>
           </button>
 
-          {/* 2nd - Talk to Companion */}
           <button
             className="action-button companion-button"
             onClick={() => navigate('/talk-to-companion')}
@@ -86,7 +146,6 @@ const PatientDashboard = () => {
             <p className="button-description">Chat with Cara about your memories</p>
           </button>
 
-          {/* 3rd - Mood Check-in */}
           <button
             className="action-button memory-button"
             onClick={() => navigate('/mood-checkin')}
@@ -98,7 +157,6 @@ const PatientDashboard = () => {
             <h3 className="button-title">How Are You Feeling?</h3>
             <p className="button-description">Share how you feel today</p>
           </button>
-
         </div>
 
         <div className="tips-section">
@@ -107,22 +165,6 @@ const PatientDashboard = () => {
           </div>
         </div>
       </main>
-
-      {showComingSoonModal && (
-        <div className="modal-overlay" onClick={closeModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={closeModal}>
-              <X size={24} />
-            </button>
-            <div className="modal-icon">🚀</div>
-            <h2 className="modal-title">Coming Soon!</h2>
-            <p className="modal-description">
-              <strong>{modalFeature}</strong> feature is currently under development.
-            </p>
-            <button className="modal-button" onClick={closeModal}>Got it!</button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
