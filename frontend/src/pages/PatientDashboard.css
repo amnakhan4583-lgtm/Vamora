@@ -135,6 +135,19 @@
   color: #d32f2f;
 }
 
+.assess-button {
+  border-color: #ab47bc;
+  background: linear-gradient(to bottom, #ffffff 0%, #f3e5f5 100%);
+}
+
+.assess-button:hover {
+  border-color: #7b1fa2;
+}
+
+.assess-button .button-icon {
+  color: #7b1fa2;
+}
+
 .button-icon {
   margin-bottom: 1.5rem;
   display: flex;

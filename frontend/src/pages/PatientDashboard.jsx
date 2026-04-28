@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Camera, MessageCircle, Smile, Calendar, Clock, X } from 'lucide-react';
+import { Camera, MessageCircle, Smile, Scan, Calendar, Clock, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -156,6 +156,18 @@ const PatientDashboard = () => {
             </div>
             <h3 className="button-title">How Are You Feeling?</h3>
             <p className="button-description">Share how you feel today</p>
+          </button>
+
+          <button
+            className="action-button assess-button"
+            onClick={() => navigate('/mood-assessment')}
+            aria-label="Assess your mood with camera"
+          >
+            <div className="button-icon">
+              <Scan size={64} strokeWidth={1.5} />
+            </div>
+            <h3 className="button-title">Assess Mood</h3>
+            <p className="button-description">Let your camera detect your mood</p>
           </button>
         </div>
 

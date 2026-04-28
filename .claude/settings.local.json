@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\('main:', d.get\\('main'\\)\\); print\\('module:', d.get\\('module'\\)\\); print\\('browser:', d.get\\('browser'\\)\\); print\\('exports:', list\\(d.get\\('exports', {}\\).keys\\(\\)\\)[:5] if d.get\\('exports'\\) else 'none'\\)\")",
+      "Bash(node -e \"const p=require\\('./node_modules/face-api.js/package.json'\\); console.log\\('main:',p.main,'module:',p.module,'browser:',JSON.stringify\\(p.browser\\)?.slice\\(0,120\\)\\)\")",
+      "Bash(node -e \"const p=require\\('./node_modules/face-api.js/package.json'\\); console.log\\(JSON.stringify\\(p.dependencies || {}, null, 2\\)\\)\")",
+      "Bash(node -e \"const f=require\\('./node_modules/face-api.js/build/commonjs/index.js'\\); console.log\\(Object.keys\\(f.nets\\)\\)\")",
+      "Bash(npx vite *)"
+    ]
+  }
+}
