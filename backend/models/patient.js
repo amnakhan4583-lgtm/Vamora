@@ -34,6 +34,12 @@ module.exports = (sequelize, DataTypes) => {
         otherKey: 'caregiverId',
         as: 'caregivers'
       });
+
+      // Patient belongs to the doctor who created it
+      Patient.belongsTo(models.User, {
+        foreignKey: 'createdByDoctorId',
+        as: 'creatingDoctor'
+      });
     }
 
     /**
@@ -120,6 +126,13 @@ module.exports = (sequelize, DataTypes) => {
     profilePhoto: {
       type: DataTypes.STRING,
       allowNull: true
+    },
+    createdByDoctorId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL'
     }
   }, {
     sequelize,

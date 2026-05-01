@@ -12,6 +12,7 @@ import PhotoGallery from './pages/PhotoGallery';
 import MoodCheckin from './pages/MoodCheckin';
 import TalkToCompanion from './pages/TalkToCompanion';
 import CaregiverDashboard from './pages/CaregiverDashboard';
+import DoctorDashboard from './pages/DoctorDashboard';
 import MoodAssessment from './pages/MoodAssessment';
 import './App.css';
 
@@ -33,6 +34,7 @@ function App() {
           <Route path="/talk-to-companion" element={<ProtectedRoute allowedRoles={['patient']}><TalkToCompanion /></ProtectedRoute>} />
           <Route path="/mood-assessment" element={<ProtectedRoute allowedRoles={['patient']}><MoodAssessment /></ProtectedRoute>} />
           <Route path="/caregiver-dashboard" element={<ProtectedRoute allowedRoles={['caregiver']}><CaregiverDashboard /></ProtectedRoute>} />
+          <Route path="/doctor-dashboard" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorDashboard /></ProtectedRoute>} />
         </Routes>
       </Router>
     </AuthProvider>

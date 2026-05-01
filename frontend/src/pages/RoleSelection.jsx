@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, Heart, Users } from 'lucide-react';
+import { User, Heart, Users, Stethoscope } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import './RoleSelection.css';
 
@@ -15,8 +15,9 @@ const RoleSelection = () => {
         navigate('/patient-dashboard', { replace: true });
       } else if (user.role === 'caregiver') {
         navigate('/caregiver-dashboard', { replace: true });
+      } else if (user.role === 'doctor') {
+        navigate('/doctor-dashboard', { replace: true });
       }
-      // Admin can see role selection to choose which view to access
     }
   }, [user, navigate]);
 
@@ -57,6 +58,21 @@ const RoleSelection = () => {
           </div>
           <h2 className="card-title">I am a Caregiver</h2>
           <p className="card-description">Support your loved one's memory journey</p>
+        </div>
+
+        <div
+          className="role-card doctor-card"
+          onClick={() => navigate('/doctor-dashboard')}
+          role="button"
+          tabIndex={0}
+          onKeyPress={(e) => e.key === 'Enter' && navigate('/doctor-dashboard')}
+        >
+          <div className="card-icon-wrapper doctor-icon">
+            <Stethoscope size={80} strokeWidth={1.5} />
+            <Heart size={40} className="heart-overlay" fill="currentColor" />
+          </div>
+          <h2 className="card-title">I am a Doctor</h2>
+          <p className="card-description">Manage patients and coordinate caregiver assignments</p>
         </div>
       </div>
 

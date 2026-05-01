@@ -75,13 +75,10 @@ const Register = () => {
       const userRole = response.data.user.role;
 
       // Navigate based on user role
-      if (userRole === 'patient') {
-        navigate('/patient-dashboard');
-      } else if (userRole === 'caregiver') {
-        navigate('/caregiver-dashboard');
-      } else {
-        navigate('/role-selection');
-      }
+      if (userRole === 'patient') navigate('/patient-dashboard');
+      else if (userRole === 'caregiver') navigate('/caregiver-dashboard');
+      else if (userRole === 'doctor') navigate('/doctor-dashboard');
+      else navigate('/role-selection');
     } catch (err) {
       console.error('Registration error:', err);
       setError(
@@ -133,6 +130,7 @@ const Register = () => {
             >
               <option value="patient">Patient</option>
               <option value="caregiver">Caregiver</option>
+              <option value="doctor">Doctor</option>
             </select>
           </div>
 

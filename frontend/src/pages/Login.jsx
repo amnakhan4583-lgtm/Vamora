@@ -19,13 +19,10 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'patient') {
-        navigate('/patient-dashboard');
-      } else if (user.role === 'caregiver') {
-        navigate('/caregiver-dashboard');
-      } else if (user.role === 'admin') {
-        navigate('/role-selection');
-      }
+      if (user.role === 'patient') navigate('/patient-dashboard');
+      else if (user.role === 'caregiver') navigate('/caregiver-dashboard');
+      else if (user.role === 'doctor') navigate('/doctor-dashboard');
+      else navigate('/role-selection');
     }
   }, [isAuthenticated, user, navigate]);
 
@@ -48,16 +45,10 @@ const Login = () => {
       const userRole = response.data.user.role;
 
       // Navigate based on user role
-      if (userRole === 'patient') {
-        navigate('/patient-dashboard');
-      } else if (userRole === 'caregiver') {
-        navigate('/caregiver-dashboard');
-      } else if (userRole === 'admin') {
-        // Admin can choose which view to see
-        navigate('/role-selection');
-      } else {
-        navigate('/role-selection');
-      }
+      if (userRole === 'patient') navigate('/patient-dashboard');
+      else if (userRole === 'caregiver') navigate('/caregiver-dashboard');
+      else if (userRole === 'doctor') navigate('/doctor-dashboard');
+      else navigate('/role-selection');
     } catch (err) {
       console.error('Login error:', err);
       setError(
@@ -147,10 +138,11 @@ const Login = () => {
 
         {/* Demo Credentials Info */}
         <div className="demo-info">
-          <p className="demo-title">🔑 Test Credentials (Available for Testing)</p>
+          <p className="demo-title">🔑 Demo Credentials</p>
           <div className="demo-credentials">
-            <p><strong>Patient:</strong> sarah.patient@vamora.com / testpass123</p>
+            <p><strong>Patient:</strong> sarah.patient@vamora.com / password123</p>
             <p><strong>Caregiver:</strong> amna.caregiver@vamora.com / password123</p>
+            <p><strong>Doctor:</strong> sarah.md@vamora.com / password123</p>
           </div>
         </div>
 

@@ -8,10 +8,6 @@ export default function CaregiverDashboard() {
   const { user } = useAuth();
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddPatient, setShowAddPatient] = useState(false);
-  const [patientEmail, setPatientEmail] = useState('');
-  const [addError, setAddError] = useState('');
-  const [addSuccess, setAddSuccess] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [patientDetails, setPatientDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -52,20 +48,6 @@ export default function CaregiverDashboard() {
       console.error('Error fetching patient details:', err);
     } finally {
       setDetailsLoading(false);
-    }
-  };
-
-  const handleAddPatient = async () => {
-    try {
-      setAddError('');
-      setAddSuccess('');
-      await api.post('/caregiver/patients/add', { email: patientEmail });
-      setAddSuccess('Patient added successfully!');
-      setPatientEmail('');
-      fetchPatients();
-      setTimeout(() => { setShowAddPatient(false); setAddSuccess(''); }, 2000);
-    } catch (err) {
-      setAddError(err.response?.data?.error || 'Failed to add patient.');
     }
   };
 
@@ -345,28 +327,7 @@ export default function CaregiverDashboard() {
           <h1 className="cg-title">Welcome back, {caregiverName}!</h1>
           <p className="cg-subtitle">{formatCurrentDate()} &nbsp;|&nbsp; {formatCurrentTime()}</p>
         </div>
-        <button className="cg-add-patient-btn" onClick={() => setShowAddPatient(!showAddPatient)}>
-          + Add Patient
-        </button>
       </div>
-
-      {/* Add Patient Form */}
-      {showAddPatient && (
-        <div className="cg-add-patient-form">
-          <h3 className="cg-form-title">Add Patient by Email</h3>
-          <div className="cg-form-row">
-            <input
-              className="cg-input"
-              placeholder="Enter patient's registered email"
-              value={patientEmail}
-              onChange={e => { setPatientEmail(e.target.value); setAddError(''); }}
-            />
-            <button className="cg-submit-btn" onClick={handleAddPatient}>Add</button>
-          </div>
-          {addError && <p className="cg-error">{addError}</p>}
-          {addSuccess && <p className="cg-success">{addSuccess}</p>}
-        </div>
-      )}
 
       {/* Quick Stats */}
       <div className="cg-stats-row">
@@ -425,7 +386,7 @@ export default function CaregiverDashboard() {
         <div className="cg-empty-state">
           <div className="cg-empty-icon">👥</div>
           <p className="cg-empty-text">No patients assigned yet</p>
-          <p className="cg-empty-sub">Click "Add Patient" to get started!</p>
+          <p className="cg-empty-sub">Your doctor will assign patients to you.</p>
         </div>
       ) : (
         <div className="cg-patients-grid">

@@ -22,7 +22,7 @@ const Navbar = () => {
   if (authPages.includes(location.pathname)) return null;
 
   // Pages where back button should not be shown (landing pages after login)
-  const noBackPages = ['/role-selection', '/patient-dashboard', '/caregiver-dashboard'];
+  const noBackPages = ['/role-selection', '/patient-dashboard', '/caregiver-dashboard', '/doctor-dashboard'];
   const shouldShowBack = !noBackPages.includes(location.pathname);
 
   return (

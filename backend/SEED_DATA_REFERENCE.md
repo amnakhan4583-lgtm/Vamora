@@ -6,7 +6,7 @@ The database has been populated with sample data for testing and development.
 
 ---
 
-## 👥 Users (6 records)
+## 👥 Users (8 records)
 
 All users have the password: **`password123`**
 
@@ -18,6 +18,8 @@ All users have the password: **`password123`**
 | 4 | amna.caregiver@vamora.com | caregiver | Active |
 | 5 | david.caregiver@vamora.com | caregiver | Active |
 | 6 | admin@vamora.com | admin | Active |
+| 7 | sarah.md@vamora.com | doctor | Active |
+| 8 | james.md@vamora.com | doctor | Active |
 
 ---
 
@@ -83,6 +85,16 @@ Password: password123
 ### For Admin Login:
 ```
 Email: admin@vamora.com
+Password: password123
+```
+
+### For Doctor Login:
+```
+Email: sarah.md@vamora.com
+Password: password123
+```
+```
+Email: james.md@vamora.com
 Password: password123
 ```
 

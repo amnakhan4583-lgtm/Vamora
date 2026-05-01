@@ -78,6 +78,19 @@
   background: linear-gradient(to bottom, #ffffff 0%, #e8f5e9 100%);
 }
 
+.doctor-card {
+  border-color: #26a69a;
+}
+
+.doctor-card:hover {
+  border-color: #00695c;
+  background: linear-gradient(to bottom, #ffffff 0%, #e0f2f1 100%);
+}
+
+.doctor-icon {
+  color: #00695c;
+}
+
 .card-icon-wrapper {
   position: relative;
   margin-bottom: 1.5rem;

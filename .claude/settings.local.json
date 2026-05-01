@@ -6,7 +6,10 @@
       "Bash(node -e \"const p=require\\('./node_modules/face-api.js/package.json'\\); console.log\\('main:',p.main,'module:',p.module,'browser:',JSON.stringify\\(p.browser\\)?.slice\\(0,120\\)\\)\")",
       "Bash(node -e \"const p=require\\('./node_modules/face-api.js/package.json'\\); console.log\\(JSON.stringify\\(p.dependencies || {}, null, 2\\)\\)\")",
       "Bash(node -e \"const f=require\\('./node_modules/face-api.js/build/commonjs/index.js'\\); console.log\\(Object.keys\\(f.nets\\)\\)\")",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(npx sequelize-cli *)",
+      "Bash(node -e \"require\\('./src/routes/doctorRoutes'\\); console.log\\('routes OK'\\);\")",
+      "Bash(node -e \"require\\('./server'\\); setTimeout\\(\\(\\) => process.exit\\(0\\), 1000\\);\")"
     ]
   }
 }

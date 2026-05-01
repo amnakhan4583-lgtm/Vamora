@@ -13,6 +13,12 @@ module.exports = (sequelize, DataTypes) => {
       });
       Caregiver.hasMany(models.Appointment, { foreignKey: 'caregiverId', as: 'appointments' });
       Caregiver.hasMany(models.CareNote, { foreignKey: 'caregiverId', as: 'careNotes' });
+
+      // Caregiver belongs to the doctor they are linked to
+      Caregiver.belongsTo(models.User, {
+        foreignKey: 'doctorId',
+        as: 'doctor'
+      });
     }
   }
 
@@ -20,7 +26,14 @@ module.exports = (sequelize, DataTypes) => {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     userId: { type: DataTypes.INTEGER, allowNull: false },
     phone: { type: DataTypes.STRING, allowNull: true },
-    name: { type: DataTypes.STRING, allowNull: true }
+    name: { type: DataTypes.STRING, allowNull: true },
+    doctorId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'users', key: 'id' },
+      onUpdate: 'CASCADE',
+      onDelete: 'SET NULL'
+    }
   }, {
     sequelize,
     modelName: 'Caregiver',

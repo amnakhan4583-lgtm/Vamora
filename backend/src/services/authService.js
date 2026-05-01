@@ -33,7 +33,7 @@ const register = async (userData) => {
       role: role || 'patient'
     }, { transaction });
 
-    // Create patient or caregiver profile based on role
+    // Create role-specific profile record
     if (user.role === 'patient') {
       await db.Patient.create({
         userId: user.id,
@@ -47,6 +47,7 @@ const register = async (userData) => {
         phone: phone || null
       }, { transaction });
     }
+    // Doctors have no separate profile table — the User record is sufficient.
 
     await transaction.commit();
 
@@ -111,11 +112,12 @@ const login = async (email, password) => {
     email: user.email
   });
 
-  // Prepare user response
-  const userResponse = {
-    ...user.toSafeObject(),
-    profile: user.role === 'patient' ? user.patientProfile : user.caregiverProfile
-  };
+  // Resolve role-specific profile
+  let profile = null;
+  if (user.role === 'patient') profile = user.patientProfile;
+  else if (user.role === 'caregiver') profile = user.caregiverProfile;
+
+  const userResponse = { ...user.toSafeObject(), profile };
 
   return {
     user: userResponse,
@@ -142,10 +144,11 @@ const getCurrentUser = async (userId) => {
     throw new Error('User not found');
   }
 
-  return {
-    ...user.toJSON(),
-    profile: user.role === 'patient' ? user.patientProfile : user.caregiverProfile
-  };
+  let profile = null;
+  if (user.role === 'patient') profile = user.patientProfile;
+  else if (user.role === 'caregiver') profile = user.caregiverProfile;
+
+  return { ...user.toJSON(), profile };
 };
 
 /**

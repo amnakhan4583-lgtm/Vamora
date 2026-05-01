@@ -38,8 +38,8 @@ const registerValidation = [
 
   body('role')
     .optional()
-    .isIn(['patient', 'caregiver', 'admin'])
-    .withMessage('Role must be either patient, caregiver, or admin'),
+    .isIn(['patient', 'caregiver', 'admin', 'doctor'])
+    .withMessage('Role must be patient, caregiver, admin, or doctor'),
 
   body('name')
     .trim()

@@ -80,13 +80,13 @@ module.exports = (sequelize, DataTypes) => {
       }
     },
     role: {
-      type: DataTypes.ENUM('patient', 'caregiver', 'admin'),
+      type: DataTypes.ENUM('patient', 'caregiver', 'admin', 'doctor'),
       allowNull: false,
       defaultValue: 'patient',
       validate: {
         isIn: {
-          args: [['patient', 'caregiver', 'admin']],
-          msg: 'Role must be either patient, caregiver, or admin'
+          args: [['patient', 'caregiver', 'admin', 'doctor']],
+          msg: 'Role must be patient, caregiver, admin, or doctor'
         }
       }
     },
