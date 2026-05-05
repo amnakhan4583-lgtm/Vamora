@@ -53,6 +53,7 @@ export default function DoctorDashboard() {
   const [details, setDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [deletingPatient, setDeletingPatient] = useState(null);
+  const [loadError, setLoadError] = useState('');
 
   const [showApptForm, setShowApptForm] = useState(false);
   const [appt, setAppt] = useState({ title: '', doctorName: '', appointmentType: '', appointmentDate: '', notes: '' });
@@ -81,6 +82,7 @@ export default function DoctorDashboard() {
   async function loadOverview() {
     try {
       setLoading(true);
+      setLoadError('');
       const [pRes, cRes] = await Promise.all([
         api.get('/doctor/patients'),
         api.get('/doctor/caregivers')
@@ -89,6 +91,7 @@ export default function DoctorDashboard() {
       setCaregivers(cRes.data.data || []);
     } catch (err) {
       console.error('Doctor overview load error:', err);
+      setLoadError(err.response?.data?.message || 'Failed to load dashboard. Please restart the server and refresh.');
     } finally {
       setLoading(false);
     }
@@ -650,6 +653,13 @@ export default function DoctorDashboard() {
         </div>
         <button className="doc-team-btn" onClick={() => setView('team')}>Manage Team</button>
       </div>
+
+      {loadError && (
+        <div className="doc-load-error">
+          <strong>Error loading dashboard:</strong> {loadError}
+          <button onClick={loadOverview} className="doc-retry-btn">Retry</button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="doc-stats-row">

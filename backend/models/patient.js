@@ -30,8 +30,8 @@ module.exports = (sequelize, DataTypes) => {
       // Patient has many Caregivers through relationships
       Patient.belongsToMany(models.Caregiver, {
         through: 'patient_caregiver_relationships',
-        foreignKey: 'patientId',
-        otherKey: 'caregiverId',
+        foreignKey: 'patient_id',
+        otherKey: 'caregiver_id',
         as: 'caregivers'
       });
 

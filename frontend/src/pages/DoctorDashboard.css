@@ -287,6 +287,20 @@
 }
 .doc-cred-close:hover { opacity: 1; }
 
+/* ── Load error banner ── */
+.doc-load-error {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  background: #ffebee; border: 1px solid #ef9a9a; border-radius: 12px;
+  padding: 0.9rem 1.25rem; margin-bottom: 1.25rem;
+  font-size: 0.92rem; color: #c62828;
+}
+.doc-retry-btn {
+  background: none; border: 2px solid #c62828; border-radius: 8px;
+  color: #c62828; font-size: 0.82rem; font-weight: 700;
+  padding: 0.3rem 0.8rem; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.doc-retry-btn:hover { background: #ffcdd2; }
+
 /* ── Alerts section ── */
 .doc-alerts-section {
   background: #fff8f8; border: 1px solid #ef9a9a; border-radius: 16px;

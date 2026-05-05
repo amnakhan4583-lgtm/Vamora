@@ -7,8 +7,8 @@ module.exports = (sequelize, DataTypes) => {
       Caregiver.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
       Caregiver.belongsToMany(models.Patient, {
         through: 'patient_caregiver_relationships',
-        foreignKey: 'caregiverId',
-        otherKey: 'patientId',
+        foreignKey: 'caregiver_id',
+        otherKey: 'patient_id',
         as: 'patients'
       });
       Caregiver.hasMany(models.Appointment, { foreignKey: 'caregiverId', as: 'appointments' });
