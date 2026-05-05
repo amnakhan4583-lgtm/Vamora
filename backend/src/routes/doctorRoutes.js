@@ -9,12 +9,12 @@ const doctorOnly = [authenticate, authorize('doctor')];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function generateDefaultPassword() {
-  const adj = ['Calm', 'Warm', 'Kind', 'Soft', 'Bright'];
-  const noun = ['Rose', 'Lake', 'Star', 'Oak', 'Moon'];
-  return `${adj[Math.floor(Math.random() * 5)]}${noun[Math.floor(Math.random() * 5)]}${Math.floor(100 + Math.random() * 900)}`;
+  const adj  = ['Calm','Warm','Kind','Soft','Bright'];
+  const noun = ['Rose','Lake','Star','Oak','Moon'];
+  return `${adj[Math.floor(Math.random()*5)]}${noun[Math.floor(Math.random()*5)]}${Math.floor(100+Math.random()*900)}`;
 }
 
-const MOOD_SCORES = { happy: 10, excited: 10, calm: 8, tired: 5, confused: 4, anxious: 3, frustrated: 3, sad: 2 };
+const MOOD_SCORES = { happy:10, excited:10, calm:8, tired:5, confused:4, anxious:3, frustrated:3, sad:2 };
 
 function calcWellness(moods) {
   if (!moods || moods.length === 0) return null;
@@ -29,86 +29,97 @@ function cognitiveStatus(score) {
   return 'Declining';
 }
 
-const MOOD_EMOJI = { happy: '😊', calm: '😌', sad: '😔', anxious: '😰', frustrated: '😡', tired: '😴', excited: '🤩', confused: '😕' };
+const MOOD_EMOJI = { happy:'😊', calm:'😌', sad:'😔', anxious:'😰', frustrated:'😡', tired:'😴', excited:'🤩', confused:'😕' };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PATIENT OVERVIEW & DETAILS
+// GET /doctor/patients  — all patients + mood, wellness, MMSE, caregiver
 // ══════════════════════════════════════════════════════════════════════════════
-
-// GET /doctor/patients — all patients with mood, wellness, MMSE
 router.get('/patients', ...doctorOnly, async (req, res) => {
   try {
     const patients = await db.Patient.findAll({
-      include: [{ model: db.User, as: 'user', attributes: ['email'] }],
+      include: [
+        { model: db.User, as: 'user', attributes: ['email'] },
+        {
+          model: db.Caregiver, as: 'caregivers',
+          attributes: ['id', 'name'],
+          through: { attributes: [] }
+        }
+      ],
       order: [['name', 'ASC']]
     });
 
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-
     const result = await Promise.all(patients.map(async (p) => {
-      const [moods, latestMmse, photoCount] = await Promise.all([
-        db.Mood.findAll({ where: { patientId: p.userId }, order: [['recordedAt', 'DESC']], limit: 7 }),
-        db.MmseScore.findOne({ where: { patientId: p.userId }, order: [['assessmentDate', 'DESC']] }),
-        db.Photo.count({ where: { patientId: p.userId } })
+      const [moods, latestMmse] = await Promise.all([
+        db.Mood.findAll({ where: { patientId: p.userId }, order: [['recordedAt','DESC']], limit: 7 }),
+        db.MmseScore.findOne({ where: { patientId: p.userId }, order: [['assessmentDate','DESC']] })
       ]);
 
       const wellnessScore = calcWellness(moods);
-      const latestMood = moods[0] || null;
+      const latestMood    = moods[0] || null;
 
-      const today = new Date();
+      const today    = new Date();
       const moodDate = latestMood ? new Date(latestMood.recordedAt) : null;
       const isMoodToday = moodDate &&
-        moodDate.getDate() === today.getDate() &&
-        moodDate.getMonth() === today.getMonth() &&
+        moodDate.getDate()     === today.getDate() &&
+        moodDate.getMonth()    === today.getMonth() &&
         moodDate.getFullYear() === today.getFullYear();
       const hasAlert = isMoodToday && wellnessScore !== null && wellnessScore < 4;
+
+      const assignedCaregiver = p.caregivers && p.caregivers.length > 0 ? p.caregivers[0] : null;
 
       return {
         id: p.id,
         userId: p.userId,
         name: p.name,
         diagnosisType: p.diagnosisType,
-        diagnosisDate: p.diagnosisDate,
         email: p.user?.email || '',
         latestMood: latestMood?.mood || null,
         latestMoodEmoji: latestMood ? (MOOD_EMOJI[latestMood.mood] || '😐') : null,
-        latestMoodDate: latestMood?.recordedAt || null,
         wellnessScore,
         latestMmseScore: latestMmse?.score ?? null,
-        latestMmseDate: latestMmse?.assessmentDate || null,
         cognitiveStatus: cognitiveStatus(latestMmse?.score ?? null),
-        photoCount,
+        assignedCaregiver: assignedCaregiver ? { id: assignedCaregiver.id, name: assignedCaregiver.name } : null,
         hasAlert
       };
     }));
 
     res.json({ status: 'success', data: result });
   } catch (err) {
-    console.error('GET ALL PATIENTS ERROR:', err.message);
+    console.error('GET PATIENTS ERROR:', err.message);
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
-// GET /doctor/patients/:patientId — full patient details
-router.get('/patients/:patientId', ...doctorOnly, async (req, res) => {
+// ══════════════════════════════════════════════════════════════════════════════
+// GET /doctor/patients/:id — full patient details
+// ══════════════════════════════════════════════════════════════════════════════
+router.get('/patients/:id', ...doctorOnly, async (req, res) => {
   try {
-    const patient = await db.Patient.findByPk(req.params.patientId, {
-      include: [{ model: db.User, as: 'user', attributes: ['email'] }]
+    const patient = await db.Patient.findByPk(req.params.id, {
+      include: [
+        { model: db.User, as: 'user', attributes: ['email'] },
+        {
+          model: db.Caregiver, as: 'caregivers',
+          attributes: ['id', 'name', 'phone'],
+          through: { attributes: [] }
+        }
+      ]
     });
     if (!patient) return res.status(404).json({ status: 'error', message: 'Patient not found.' });
 
-    const [moods, appointments, medications, mmseScores, photoCount] = await Promise.all([
-      db.Mood.findAll({ where: { patientId: patient.userId }, order: [['recordedAt', 'DESC']], limit: 10 }),
-      db.Appointment.findAll({ where: { patientId: patient.userId }, order: [['appointmentDate', 'ASC']] }),
-      db.Medication.findAll({ where: { patientId: patient.userId }, order: [['createdAt', 'DESC']] }),
-      db.MmseScore.findAll({ where: { patientId: patient.userId }, order: [['assessmentDate', 'ASC']] }),
+    const [moods, appointments, medications, mmseScores, careNotes, photoCount] = await Promise.all([
+      db.Mood.findAll({ where: { patientId: patient.userId }, order: [['recordedAt','DESC']], limit: 10 }),
+      db.Appointment.findAll({ where: { patientId: patient.userId }, order: [['appointmentDate','ASC']] }),
+      db.Medication.findAll({ where: { patientId: patient.userId }, order: [['createdAt','DESC']] }),
+      db.MmseScore.findAll({ where: { patientId: patient.userId }, order: [['assessmentDate','ASC']] }),
+      db.CareNote.findAll({ where: { patientId: patient.userId }, order: [['createdAt','DESC']], limit: 20 }),
       db.Photo.count({ where: { patientId: patient.userId } })
     ]);
 
     const wellnessScore = calcWellness(moods.slice(0, 7));
-    const latestMood = moods[0] || null;
-    const latestMmse = mmseScores.length > 0 ? mmseScores[mmseScores.length - 1] : null;
+    const latestMood    = moods[0] || null;
+    const latestMmse    = mmseScores.length > 0 ? mmseScores[mmseScores.length - 1] : null;
+    const assignedCaregiver = patient.caregivers && patient.caregivers.length > 0 ? patient.caregivers[0] : null;
 
     res.json({
       status: 'success',
@@ -122,10 +133,12 @@ router.get('/patients/:patientId', ...doctorOnly, async (req, res) => {
           diagnosisDate: patient.diagnosisDate,
           dateOfBirth: patient.dateOfBirth
         },
+        assignedCaregiver,
         moods,
         appointments,
         medications,
         mmseScores,
+        careNotes,
         photoCount,
         wellnessScore,
         latestMood,
@@ -140,34 +153,109 @@ router.get('/patients/:patientId', ...doctorOnly, async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// DELETE /doctor/patients/:id — delete patient + all related data
+// ══════════════════════════════════════════════════════════════════════════════
+router.delete('/patients/:id', ...doctorOnly, async (req, res) => {
+  const transaction = await db.sequelize.transaction();
+  try {
+    const patient = await db.Patient.findByPk(req.params.id);
+    if (!patient) return res.status(404).json({ status: 'error', message: 'Patient not found.' });
+
+    const uid = patient.userId;
+
+    await db.Photo.destroy({ where: { patientId: uid }, transaction });
+    await db.Mood.destroy({ where: { patientId: uid }, transaction });
+    await db.ChatMessage.destroy({ where: { patientId: uid }, transaction });
+    await db.Appointment.destroy({ where: { patientId: uid }, transaction });
+    await db.Medication.destroy({ where: { patientId: uid }, transaction });
+    await db.MmseScore.destroy({ where: { patientId: uid }, transaction });
+    await db.CareNote.destroy({ where: { patientId: uid }, transaction });
+    await db.sequelize.query(
+      'DELETE FROM patient_caregiver_relationships WHERE patient_id = :pid',
+      { replacements: { pid: patient.id }, transaction }
+    );
+    await patient.destroy({ transaction });
+    await db.User.destroy({ where: { id: uid }, transaction });
+
+    await transaction.commit();
+    res.json({ status: 'success', message: 'Patient deleted.' });
+  } catch (err) {
+    await transaction.rollback();
+    console.error('DELETE PATIENT ERROR:', err.message);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GET /doctor/caregivers — ALL caregivers in system
+// ══════════════════════════════════════════════════════════════════════════════
+router.get('/caregivers', ...doctorOnly, async (req, res) => {
+  try {
+    const caregivers = await db.Caregiver.findAll({
+      include: [
+        { model: db.User, as: 'user', attributes: ['email'] },
+        {
+          model: db.Patient, as: 'patients',
+          attributes: ['id', 'name', 'userId'],
+          through: { attributes: [] }
+        }
+      ],
+      order: [['name', 'ASC']]
+    });
+
+    const result = await Promise.all(caregivers.map(async (cg) => {
+      // last activity = most recent care note for any of their patients
+      const patientUserIds = (cg.patients || []).map(p => p.userId);
+      let lastActivityDate = null;
+      if (patientUserIds.length > 0) {
+        const lastNote = await db.CareNote.findOne({
+          where: { caregiverId: cg.id },
+          order: [['createdAt', 'DESC']]
+        });
+        lastActivityDate = lastNote?.createdAt || null;
+      }
+
+      return {
+        id: cg.id,
+        name: cg.name || 'Unknown',
+        email: cg.user?.email || '',
+        phone: cg.phone || null,
+        patientCount: (cg.patients || []).length,
+        patientNames: (cg.patients || []).map(p => p.name),
+        lastActivityDate
+      };
+    }));
+
+    res.json({ status: 'success', data: result });
+  } catch (err) {
+    console.error('GET CAREGIVERS ERROR:', err.message);
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // APPOINTMENTS
 // ══════════════════════════════════════════════════════════════════════════════
-
-// POST /doctor/patients/:patientId/appointments
-router.post('/patients/:patientId/appointments', ...doctorOnly, async (req, res) => {
+router.post('/patients/:id/appointments', ...doctorOnly, async (req, res) => {
   try {
-    const patient = await db.Patient.findByPk(req.params.patientId);
+    const patient = await db.Patient.findByPk(req.params.id);
     if (!patient) return res.status(404).json({ status: 'error', message: 'Patient not found.' });
 
     const { title, doctorName, appointmentType, appointmentDate, notes } = req.body;
-    if (!title || !appointmentDate) {
-      return res.status(400).json({ status: 'error', message: 'Title and appointment date are required.' });
-    }
+    if (!title || !appointmentDate)
+      return res.status(400).json({ status: 'error', message: 'Title and date are required.' });
 
     const appt = await db.Appointment.create({
       patientId: patient.userId,
       doctorId: req.user.id,
       title, doctorName, appointmentType, appointmentDate, notes
     });
-
     res.status(201).json({ status: 'success', data: appt });
   } catch (err) {
-    console.error('ADD APPOINTMENT ERROR:', err.message);
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
-// DELETE /doctor/appointments/:id
 router.delete('/appointments/:id', ...doctorOnly, async (req, res) => {
   try {
     await db.Appointment.destroy({ where: { id: req.params.id } });
@@ -180,48 +268,38 @@ router.delete('/appointments/:id', ...doctorOnly, async (req, res) => {
 // ══════════════════════════════════════════════════════════════════════════════
 // MEDICATIONS
 // ══════════════════════════════════════════════════════════════════════════════
-
-// POST /doctor/patients/:patientId/medications
-router.post('/patients/:patientId/medications', ...doctorOnly, async (req, res) => {
+router.post('/patients/:id/medications', ...doctorOnly, async (req, res) => {
   try {
-    const patient = await db.Patient.findByPk(req.params.patientId);
+    const patient = await db.Patient.findByPk(req.params.id);
     if (!patient) return res.status(404).json({ status: 'error', message: 'Patient not found.' });
 
     const { medicationName, dosage, frequency, timing, startDate, endDate, notes } = req.body;
-    if (!medicationName) {
+    if (!medicationName)
       return res.status(400).json({ status: 'error', message: 'Medication name is required.' });
-    }
 
     const med = await db.Medication.create({
       patientId: patient.userId,
       doctorId: req.user.id,
-      medicationName, dosage, frequency, timing, startDate: startDate || null, endDate: endDate || null, notes
+      medicationName, dosage, frequency, timing,
+      startDate: startDate || null, endDate: endDate || null, notes
     });
-
     res.status(201).json({ status: 'success', data: med });
   } catch (err) {
-    console.error('ADD MEDICATION ERROR:', err.message);
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
-// GET /doctor/patients/:patientId/medications
-router.get('/patients/:patientId/medications', ...doctorOnly, async (req, res) => {
+router.get('/patients/:id/medications', ...doctorOnly, async (req, res) => {
   try {
-    const patient = await db.Patient.findByPk(req.params.patientId);
+    const patient = await db.Patient.findByPk(req.params.id);
     if (!patient) return res.status(404).json({ status: 'error', message: 'Patient not found.' });
-
-    const meds = await db.Medication.findAll({
-      where: { patientId: patient.userId },
-      order: [['createdAt', 'DESC']]
-    });
+    const meds = await db.Medication.findAll({ where: { patientId: patient.userId }, order: [['createdAt','DESC']] });
     res.json({ status: 'success', data: meds });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
-// DELETE /doctor/medications/:id
 router.delete('/medications/:id', ...doctorOnly, async (req, res) => {
   try {
     await db.Medication.destroy({ where: { id: req.params.id } });
@@ -232,48 +310,36 @@ router.delete('/medications/:id', ...doctorOnly, async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// MMSE SCORES
+// MMSE
 // ══════════════════════════════════════════════════════════════════════════════
-
-// POST /doctor/patients/:patientId/mmse
-router.post('/patients/:patientId/mmse', ...doctorOnly, async (req, res) => {
+router.post('/patients/:id/mmse', ...doctorOnly, async (req, res) => {
   try {
-    const patient = await db.Patient.findByPk(req.params.patientId);
+    const patient = await db.Patient.findByPk(req.params.id);
     if (!patient) return res.status(404).json({ status: 'error', message: 'Patient not found.' });
 
     const { score, assessmentDate, notes } = req.body;
-    if (score === undefined || score === null || !assessmentDate) {
+    if (score === undefined || score === null || !assessmentDate)
       return res.status(400).json({ status: 'error', message: 'Score and assessment date are required.' });
-    }
-    if (score < 0 || score > 30) {
-      return res.status(400).json({ status: 'error', message: 'MMSE score must be between 0 and 30.' });
-    }
+    const s = parseInt(score);
+    if (isNaN(s) || s < 0 || s > 30)
+      return res.status(400).json({ status: 'error', message: 'Score must be 0–30.' });
 
     const entry = await db.MmseScore.create({
       patientId: patient.userId,
       doctorId: req.user.id,
-      score: parseInt(score),
-      assessmentDate,
-      notes
+      score: s, assessmentDate, notes
     });
-
     res.status(201).json({ status: 'success', data: entry });
   } catch (err) {
-    console.error('ADD MMSE ERROR:', err.message);
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
-// GET /doctor/patients/:patientId/mmse
-router.get('/patients/:patientId/mmse', ...doctorOnly, async (req, res) => {
+router.get('/patients/:id/mmse', ...doctorOnly, async (req, res) => {
   try {
-    const patient = await db.Patient.findByPk(req.params.patientId);
+    const patient = await db.Patient.findByPk(req.params.id);
     if (!patient) return res.status(404).json({ status: 'error', message: 'Patient not found.' });
-
-    const scores = await db.MmseScore.findAll({
-      where: { patientId: patient.userId },
-      order: [['assessmentDate', 'ASC']]
-    });
+    const scores = await db.MmseScore.findAll({ where: { patientId: patient.userId }, order: [['assessmentDate','ASC']] });
     res.json({ status: 'success', data: scores });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
@@ -281,15 +347,13 @@ router.get('/patients/:patientId/mmse', ...doctorOnly, async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PATIENT-FACING: my medications (authenticated as patient)
+// GET /doctor/my-medications — patient's own medications (patient token)
 // ══════════════════════════════════════════════════════════════════════════════
-
-// GET /doctor/my-medications — called by patient dashboard using patient token
 router.get('/my-medications', authenticate, async (req, res) => {
   try {
     const meds = await db.Medication.findAll({
       where: { patientId: req.user.id },
-      order: [['createdAt', 'DESC']]
+      order: [['createdAt','DESC']]
     });
     res.json(meds);
   } catch (err) {
@@ -298,56 +362,29 @@ router.get('/my-medications', authenticate, async (req, res) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
-// TEAM MANAGEMENT (patient creation, caregiver linking, assignment)
+// TEAM MANAGEMENT (create patient, link caregiver, assign)
 // ══════════════════════════════════════════════════════════════════════════════
-
-// POST /doctor/team/patients — create a patient account
 router.post('/team/patients', ...doctorOnly, async (req, res) => {
   const { name, email } = req.body;
   if (!name || !email) return res.status(400).json({ status: 'error', message: 'Name and email are required.' });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return res.status(400).json({ status: 'error', message: 'Enter a valid email address.' });
-
   const existing = await db.User.findOne({ where: { email } });
   if (existing) return res.status(409).json({ status: 'error', message: 'An account with this email already exists.' });
 
   const defaultPassword = generateDefaultPassword();
-  const transaction = await db.sequelize.transaction();
+  const t = await db.sequelize.transaction();
   try {
-    const user = await db.User.create({ email: email.trim().toLowerCase(), password: defaultPassword, role: 'patient' }, { transaction });
-    const patient = await db.Patient.create({ userId: user.id, name: name.trim(), createdByDoctorId: req.user.id }, { transaction });
-    await transaction.commit();
+    const user    = await db.User.create({ email: email.trim().toLowerCase(), password: defaultPassword, role: 'patient' }, { transaction: t });
+    const patient = await db.Patient.create({ userId: user.id, name: name.trim(), createdByDoctorId: req.user.id }, { transaction: t });
+    await t.commit();
     res.status(201).json({ status: 'success', data: { id: patient.id, name: patient.name, email: user.email, createdAt: patient.createdAt, defaultPassword } });
   } catch (err) {
-    await transaction.rollback();
+    await t.rollback();
     res.status(500).json({ status: 'error', message: err.message });
   }
 });
 
-// GET /doctor/team/caregivers — caregivers linked to this doctor
-router.get('/team/caregivers', ...doctorOnly, async (req, res) => {
-  try {
-    const caregivers = await db.Caregiver.findAll({
-      where: { doctorId: req.user.id },
-      include: [
-        { model: db.User, as: 'user', attributes: ['email'] },
-        { model: db.Patient, as: 'patients', attributes: ['id', 'name'], through: { attributes: [] } }
-      ],
-      order: [['createdAt', 'ASC']]
-    });
-    const result = caregivers.map(cg => ({
-      id: cg.id, name: cg.name, email: cg.user?.email || '',
-      specialization: cg.specialization || 'Caregiver', joinedAt: cg.createdAt,
-      assignedPatients: (cg.patients || []).map(p => ({ id: p.id, name: p.name })),
-      patientCount: (cg.patients || []).length
-    }));
-    res.json({ status: 'success', data: result });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
-  }
-});
-
-// POST /doctor/team/caregivers/link
 router.post('/team/caregivers/link', ...doctorOnly, async (req, res) => {
   const { email } = req.body;
   if (!email) return res.status(400).json({ status: 'error', message: 'Caregiver email is required.' });
@@ -359,47 +396,7 @@ router.post('/team/caregivers/link', ...doctorOnly, async (req, res) => {
     if (caregiver.doctorId && caregiver.doctorId !== req.user.id)
       return res.status(409).json({ status: 'error', message: 'Caregiver is already linked to another doctor.' });
     await caregiver.update({ doctorId: req.user.id });
-    res.json({ status: 'success', data: { id: caregiver.id, name: caregiver.name, email: cgUser.email, specialization: caregiver.specialization || 'Caregiver', joinedAt: caregiver.createdAt, assignedPatients: [], patientCount: 0 } });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
-  }
-});
-
-// POST /doctor/team/patients/:patientId/assign
-router.post('/team/patients/:patientId/assign', ...doctorOnly, async (req, res) => {
-  const { caregiverId } = req.body;
-  if (!caregiverId) return res.status(400).json({ status: 'error', message: 'caregiverId is required.' });
-  try {
-    const patient = await db.Patient.findByPk(req.params.patientId);
-    if (!patient) return res.status(404).json({ status: 'error', message: 'Patient not found.' });
-    const caregiver = await db.Caregiver.findOne({ where: { id: caregiverId, doctorId: req.user.id } });
-    if (!caregiver) return res.status(404).json({ status: 'error', message: 'Caregiver not linked to you.' });
-    const existing = await db.sequelize.query(
-      `SELECT 1 FROM patient_caregiver_relationships WHERE patient_id = :pid AND caregiver_id = :cid`,
-      { replacements: { pid: patient.id, cid: caregiver.id }, type: db.sequelize.QueryTypes.SELECT }
-    );
-    if (existing.length === 0) {
-      await db.sequelize.query(
-        `INSERT INTO patient_caregiver_relationships (patient_id, caregiver_id, created_at, updated_at) VALUES (:pid, :cid, NOW(), NOW())`,
-        { replacements: { pid: patient.id, cid: caregiver.id } }
-      );
-    }
-    res.json({ status: 'success', message: 'Patient assigned to caregiver.' });
-  } catch (err) {
-    res.status(500).json({ status: 'error', message: err.message });
-  }
-});
-
-// DELETE /doctor/team/patients/:patientId/assign/:caregiverId
-router.delete('/team/patients/:patientId/assign/:caregiverId', ...doctorOnly, async (req, res) => {
-  try {
-    const patient = await db.Patient.findByPk(req.params.patientId);
-    if (!patient) return res.status(404).json({ status: 'error', message: 'Patient not found.' });
-    await db.sequelize.query(
-      `DELETE FROM patient_caregiver_relationships WHERE patient_id = :pid AND caregiver_id = :cid`,
-      { replacements: { pid: patient.id, cid: Number(req.params.caregiverId) } }
-    );
-    res.json({ status: 'success', message: 'Assignment removed.' });
+    res.json({ status: 'success', message: 'Caregiver linked.' });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }

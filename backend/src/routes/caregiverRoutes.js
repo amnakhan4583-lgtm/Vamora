@@ -169,8 +169,8 @@ router.get('/patients/:patientId', authenticate, async (req, res) => {
   }
 });
 
-// ─── POST Add Appointment ─────────────────────────────────────────────────────
-router.post('/patients/:patientId/appointments', authenticate, async (req, res) => {
+// ─── GET Patient Medications (read-only for caregiver) ───────────────────────
+router.get('/patients/:patientId/medications', authenticate, async (req, res) => {
   try {
     const caregiver = await getCaregiverProfile(req.user.id);
     if (!caregiver) return res.status(404).json({ error: 'Caregiver profile not found.' });
@@ -178,28 +178,14 @@ router.post('/patients/:patientId/appointments', authenticate, async (req, res) 
     const patient = await db.Patient.findByPk(req.params.patientId);
     if (!patient) return res.status(404).json({ error: 'Patient not found.' });
 
-    const { title, doctorName, appointmentType, appointmentDate, notes } = req.body;
-    if (!title || !appointmentDate) return res.status(400).json({ error: 'Title and date are required.' });
-
-    const appointment = await db.Appointment.create({
-      patientId: patient.userId,
-      caregiverId: caregiver.id,
-      title, doctorName, appointmentType, appointmentDate, notes
+    const medications = await db.Medication.findAll({
+      where: { patientId: patient.userId },
+      order: [['createdAt', 'DESC']]
     });
 
-    res.json(appointment);
+    res.json(medications);
   } catch (err) {
-    console.error('ADD APPOINTMENT ERROR:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── DELETE Appointment ───────────────────────────────────────────────────────
-router.delete('/appointments/:appointmentId', authenticate, async (req, res) => {
-  try {
-    await db.Appointment.destroy({ where: { id: req.params.appointmentId } });
-    res.json({ message: 'Appointment deleted.' });
-  } catch (err) {
+    console.error('GET MEDICATIONS ERROR:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

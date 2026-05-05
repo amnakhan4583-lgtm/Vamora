@@ -43,34 +43,29 @@ export default function DoctorDashboard() {
     || user?.email?.split('@')[0]?.split('.')?.[0] || 'Doctor';
   const displayName = doctorName.charAt(0).toUpperCase() + doctorName.slice(1);
 
-  // ── top-level view state ──────────────────────────────────────────────────
-  const [view, setView] = useState('overview'); // 'overview' | 'detail' | 'team'
-  const [activeDetailTab, setActiveDetailTab] = useState('summary');
+  const [view, setView] = useState('overview');
+  const [activeDetailTab, setActiveDetailTab] = useState('appointments');
 
-  // ── data ──────────────────────────────────────────────────────────────────
   const [patients, setPatients] = useState([]);
   const [caregivers, setCaregivers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [details, setDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [deletingPatient, setDeletingPatient] = useState(null);
 
-  // ── appointment form ──────────────────────────────────────────────────────
   const [showApptForm, setShowApptForm] = useState(false);
   const [appt, setAppt] = useState({ title: '', doctorName: '', appointmentType: '', appointmentDate: '', notes: '' });
   const [apptError, setApptError] = useState('');
 
-  // ── medication form ───────────────────────────────────────────────────────
   const [showMedForm, setShowMedForm] = useState(false);
   const [med, setMed] = useState({ medicationName: '', dosage: '', frequency: '', timing: '', startDate: '', notes: '' });
   const [medError, setMedError] = useState('');
 
-  // ── MMSE form ─────────────────────────────────────────────────────────────
   const [showMmseForm, setShowMmseForm] = useState(false);
   const [mmseEntry, setMmseEntry] = useState({ score: '', assessmentDate: '', notes: '' });
   const [mmseError, setMmseError] = useState('');
 
-  // ── team management ───────────────────────────────────────────────────────
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newPatient, setNewPatient] = useState({ name: '', email: '' });
   const [createError, setCreateError] = useState('');
@@ -81,7 +76,6 @@ export default function DoctorDashboard() {
   const [linkError, setLinkError] = useState('');
   const [linking, setLinking] = useState(false);
 
-  // ── load ──────────────────────────────────────────────────────────────────
   useEffect(() => { loadOverview(); }, []);
 
   async function loadOverview() {
@@ -89,10 +83,10 @@ export default function DoctorDashboard() {
       setLoading(true);
       const [pRes, cRes] = await Promise.all([
         api.get('/doctor/patients'),
-        api.get('/doctor/team/caregivers')
+        api.get('/doctor/caregivers')
       ]);
-      setPatients(pRes.data.data);
-      setCaregivers(cRes.data.data);
+      setPatients(pRes.data.data || []);
+      setCaregivers(cRes.data.data || []);
     } catch (err) {
       console.error('Doctor overview load error:', err);
     } finally {
@@ -102,7 +96,7 @@ export default function DoctorDashboard() {
 
   async function openPatient(patient) {
     setSelectedPatient(patient);
-    setActiveDetailTab('summary');
+    setActiveDetailTab('appointments');
     setView('detail');
     try {
       setDetailsLoading(true);
@@ -124,7 +118,26 @@ export default function DoctorDashboard() {
     setShowMmseForm(false);
   }
 
-  // ── appointments ──────────────────────────────────────────────────────────
+  async function handleDeletePatient(patient, e) {
+    e.stopPropagation();
+    if (!window.confirm(`Permanently delete ${patient.name} and all their data? This cannot be undone.`)) return;
+    try {
+      setDeletingPatient(patient.id);
+      await api.delete(`/doctor/patients/${patient.id}`);
+      await loadOverview();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete patient.');
+    } finally {
+      setDeletingPatient(null);
+    }
+  }
+
+  async function refreshDetails() {
+    if (!selectedPatient) return;
+    const { data } = await api.get(`/doctor/patients/${selectedPatient.id}`);
+    setDetails(data.data);
+  }
+
   async function handleAddAppt() {
     if (!appt.title || !appt.appointmentDate) { setApptError('Title and date are required.'); return; }
     try {
@@ -132,8 +145,7 @@ export default function DoctorDashboard() {
       setAppt({ title: '', doctorName: '', appointmentType: '', appointmentDate: '', notes: '' });
       setShowApptForm(false);
       setApptError('');
-      const { data } = await api.get(`/doctor/patients/${selectedPatient.id}`);
-      setDetails(data.data);
+      await refreshDetails();
     } catch (err) {
       setApptError(err.response?.data?.message || 'Failed to add appointment.');
     }
@@ -142,11 +154,9 @@ export default function DoctorDashboard() {
   async function handleDeleteAppt(id) {
     if (!window.confirm('Delete this appointment?')) return;
     await api.delete(`/doctor/appointments/${id}`);
-    const { data } = await api.get(`/doctor/patients/${selectedPatient.id}`);
-    setDetails(data.data);
+    await refreshDetails();
   }
 
-  // ── medications ───────────────────────────────────────────────────────────
   async function handleAddMed() {
     if (!med.medicationName) { setMedError('Medication name is required.'); return; }
     try {
@@ -154,8 +164,7 @@ export default function DoctorDashboard() {
       setMed({ medicationName: '', dosage: '', frequency: '', timing: '', startDate: '', notes: '' });
       setShowMedForm(false);
       setMedError('');
-      const { data } = await api.get(`/doctor/patients/${selectedPatient.id}`);
-      setDetails(data.data);
+      await refreshDetails();
     } catch (err) {
       setMedError(err.response?.data?.message || 'Failed to add medication.');
     }
@@ -164,11 +173,9 @@ export default function DoctorDashboard() {
   async function handleDeleteMed(id) {
     if (!window.confirm('Delete this medication?')) return;
     await api.delete(`/doctor/medications/${id}`);
-    const { data } = await api.get(`/doctor/patients/${selectedPatient.id}`);
-    setDetails(data.data);
+    await refreshDetails();
   }
 
-  // ── MMSE ──────────────────────────────────────────────────────────────────
   async function handleAddMmse() {
     const score = parseInt(mmseEntry.score);
     if (isNaN(score) || score < 0 || score > 30) { setMmseError('Score must be 0–30.'); return; }
@@ -178,14 +185,12 @@ export default function DoctorDashboard() {
       setMmseEntry({ score: '', assessmentDate: '', notes: '' });
       setShowMmseForm(false);
       setMmseError('');
-      const { data } = await api.get(`/doctor/patients/${selectedPatient.id}`);
-      setDetails(data.data);
+      await refreshDetails();
     } catch (err) {
       setMmseError(err.response?.data?.message || 'Failed to add MMSE score.');
     }
   }
 
-  // ── team: create patient ──────────────────────────────────────────────────
   async function handleCreatePatient() {
     const name = newPatient.name.trim();
     const email = newPatient.email.trim();
@@ -206,7 +211,6 @@ export default function DoctorDashboard() {
     }
   }
 
-  // ── team: link caregiver ──────────────────────────────────────────────────
   async function handleLinkCaregiver() {
     const email = linkEmail.trim();
     if (!email) { setLinkError('Email is required.'); return; }
@@ -224,9 +228,9 @@ export default function DoctorDashboard() {
     }
   }
 
-  // ── computed ──────────────────────────────────────────────────────────────
-  const alertCount = patients.filter(p => p.hasAlert).length;
+  const decliningCount = patients.filter(p => p.cognitiveStatus === 'Declining').length;
   const stableCount = patients.filter(p => p.cognitiveStatus === 'Stable').length;
+  const alertPatients = patients.filter(p => p.hasAlert);
 
   const moodChartData = details?.moods
     ? [...details.moods].reverse().map(m => ({
@@ -241,7 +245,6 @@ export default function DoctorDashboard() {
     score: s.score
   })) || [];
 
-  // ══════════════════════════════════════════════════════════════════════════
   if (loading) return (
     <div className="doc-loading">
       <div className="doc-spinner" />
@@ -271,7 +274,6 @@ export default function DoctorDashboard() {
           <div className="doc-loading"><div className="doc-spinner" /><p>Loading patient data…</p></div>
         ) : (
           <>
-            {/* ── Summary strip ── */}
             <div className="doc-summary-strip">
               <div className="doc-summary-item">
                 <span className="doc-summary-label">Wellness</span>
@@ -286,9 +288,9 @@ export default function DoctorDashboard() {
                 </span>
               </div>
               <div className="doc-summary-item">
-                <span className="doc-summary-label">Diagnosis</span>
+                <span className="doc-summary-label">Caregiver</span>
                 <span className="doc-summary-val doc-summary-val--sm">
-                  {details.patient.diagnosisType || 'Not recorded'}
+                  {details.assignedCaregiver?.name || 'Unassigned'}
                 </span>
               </div>
               <div className="doc-summary-item">
@@ -301,9 +303,8 @@ export default function DoctorDashboard() {
               </div>
             </div>
 
-            {/* ── Detail tabs ── */}
             <div className="doc-detail-tabs">
-              {['appointments', 'medications', 'mmse', 'mood'].map(tab => (
+              {['appointments', 'medications', 'mmse', 'mood', 'notes'].map(tab => (
                 <button
                   key={tab}
                   className={`doc-detail-tab ${activeDetailTab === tab ? 'doc-detail-tab--active' : ''}`}
@@ -313,11 +314,12 @@ export default function DoctorDashboard() {
                   {tab === 'medications' && '💊 Medications'}
                   {tab === 'mmse' && '🧠 MMSE Scores'}
                   {tab === 'mood' && '😊 Mood History'}
+                  {tab === 'notes' && '📝 Care Notes'}
                 </button>
               ))}
             </div>
 
-            {/* ── APPOINTMENTS ── */}
+            {/* APPOINTMENTS */}
             {activeDetailTab === 'appointments' && (
               <div className="doc-section">
                 <div className="doc-section-header">
@@ -366,7 +368,7 @@ export default function DoctorDashboard() {
               </div>
             )}
 
-            {/* ── MEDICATIONS ── */}
+            {/* MEDICATIONS */}
             {activeDetailTab === 'medications' && (
               <div className="doc-section">
                 <div className="doc-section-header">
@@ -386,7 +388,7 @@ export default function DoctorDashboard() {
                         onChange={e => setMed(p => ({ ...p, frequency: e.target.value }))} />
                       <input className="doc-input" placeholder="Timing (e.g. morning, with food)" value={med.timing}
                         onChange={e => setMed(p => ({ ...p, timing: e.target.value }))} />
-                      <input className="doc-input" type="date" placeholder="Start date" value={med.startDate}
+                      <input className="doc-input" type="date" value={med.startDate}
                         onChange={e => setMed(p => ({ ...p, startDate: e.target.value }))} />
                       <textarea className="doc-input doc-textarea" placeholder="Notes (optional)" value={med.notes}
                         onChange={e => setMed(p => ({ ...p, notes: e.target.value }))} />
@@ -418,7 +420,7 @@ export default function DoctorDashboard() {
               </div>
             )}
 
-            {/* ── MMSE ── */}
+            {/* MMSE */}
             {activeDetailTab === 'mmse' && (
               <div className="doc-section">
                 <div className="doc-section-header">
@@ -443,14 +445,11 @@ export default function DoctorDashboard() {
                     <button className="doc-save-btn" onClick={handleAddMmse}>Save Score</button>
                   </div>
                 )}
-
-                {/* Cognitive status legend */}
                 <div className="doc-cog-legend">
                   <span style={getCognitiveStyle('Stable')}>24–30 Stable</span>
                   <span style={getCognitiveStyle('Needs Monitoring')}>18–23 Needs Monitoring</span>
                   <span style={getCognitiveStyle('Declining')}>0–17 Declining</span>
                 </div>
-
                 {mmseChartData.length === 0 ? (
                   <p className="doc-empty">No MMSE scores recorded yet.</p>
                 ) : (
@@ -494,7 +493,7 @@ export default function DoctorDashboard() {
               </div>
             )}
 
-            {/* ── MOOD HISTORY (read-only) ── */}
+            {/* MOOD HISTORY */}
             {activeDetailTab === 'mood' && (
               <div className="doc-section">
                 <h2 className="doc-section-title">Mood History</h2>
@@ -535,6 +534,31 @@ export default function DoctorDashboard() {
                 )}
               </div>
             )}
+
+            {/* CARE NOTES — read-only */}
+            {activeDetailTab === 'notes' && (
+              <div className="doc-section">
+                <div className="doc-section-header">
+                  <h2 className="doc-section-title">Care Notes</h2>
+                  <span className="doc-readonly-badge">Written by Caregiver</span>
+                </div>
+                {!details.careNotes || details.careNotes.length === 0 ? (
+                  <p className="doc-empty">No care notes from caregiver yet.</p>
+                ) : (
+                  <div className="doc-list">
+                    {details.careNotes.map(n => (
+                      <div key={n.id} className="doc-list-item doc-note-item">
+                        <div className="doc-list-icon">📝</div>
+                        <div className="doc-list-body">
+                          <p className="doc-list-title">{n.note}</p>
+                          <p className="doc-list-date">{formatDate(n.createdAt)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -552,7 +576,6 @@ export default function DoctorDashboard() {
           <h1 className="doc-page-title">Team Management</h1>
         </div>
 
-        {/* Credential banner */}
         {credential && (
           <div className="doc-credential-banner">
             <div className="doc-credential-content">
@@ -566,7 +589,6 @@ export default function DoctorDashboard() {
           </div>
         )}
 
-        {/* Create Patient */}
         <div className="doc-section">
           <div className="doc-section-header">
             <h2 className="doc-section-title">Create Patient Account</h2>
@@ -590,7 +612,6 @@ export default function DoctorDashboard() {
           )}
         </div>
 
-        {/* Link Caregiver */}
         <div className="doc-section">
           <div className="doc-section-header">
             <h2 className="doc-section-title">Link Caregiver</h2>
@@ -611,33 +632,16 @@ export default function DoctorDashboard() {
               {linkError && <p className="doc-error">{linkError}</p>}
             </div>
           )}
-          {caregivers.length === 0 ? (
-            <p className="doc-empty">No caregivers linked yet.</p>
-          ) : (
-            <div className="doc-list">
-              {caregivers.map(cg => (
-                <div key={cg.id} className="doc-list-item">
-                  <div className="doc-list-icon">👩‍⚕️</div>
-                  <div className="doc-list-body">
-                    <p className="doc-list-title">{cg.name}</p>
-                    <p className="doc-list-sub">{cg.email}</p>
-                    <p className="doc-list-sub">{cg.specialization} · {cg.patientCount} patient{cg.patientCount !== 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     );
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // OVERVIEW (all patients)
+  // OVERVIEW
   // ══════════════════════════════════════════════════════════════════════════
   return (
     <div className="doc-container">
-      {/* Header */}
       <div className="doc-header">
         <div>
           <div className="doc-role-badge">🩺 Doctor</div>
@@ -654,20 +658,38 @@ export default function DoctorDashboard() {
           <p className="doc-stat-lbl">Total Patients</p>
         </div>
         <div className="doc-stat-card">
-          <p className="doc-stat-val" style={{ color: '#43a047' }}>{stableCount}</p>
+          <p className="doc-stat-val">{caregivers.length}</p>
+          <p className="doc-stat-lbl">Total Caregivers</p>
+        </div>
+        <div className="doc-stat-card">
+          <p className="doc-stat-val" style={{ color: stableCount > 0 ? '#43a047' : '#757575' }}>{stableCount}</p>
           <p className="doc-stat-lbl">Stable</p>
         </div>
         <div className="doc-stat-card">
-          <p className="doc-stat-val" style={{ color: alertCount > 0 ? '#e53935' : '#43a047' }}>{alertCount}</p>
-          <p className="doc-stat-lbl">Alerts Today</p>
-        </div>
-        <div className="doc-stat-card">
-          <p className="doc-stat-val">{caregivers.length}</p>
-          <p className="doc-stat-lbl">Caregivers</p>
+          <p className="doc-stat-val" style={{ color: decliningCount > 0 ? '#e53935' : '#757575' }}>{decliningCount}</p>
+          <p className="doc-stat-lbl">Declining</p>
         </div>
       </div>
 
-      {/* All patients grid */}
+      {/* Alerts */}
+      {alertPatients.length > 0 && (
+        <div className="doc-alerts-section">
+          <h2 className="doc-alerts-title">⚠ Patients Needing Attention Today</h2>
+          <div className="doc-alerts-list">
+            {alertPatients.map(p => (
+              <div key={p.id} className="doc-alert-item">
+                <span className="doc-alert-name">{p.name}</span>
+                <span className="doc-alert-mood">
+                  {p.latestMoodEmoji} Feeling {p.latestMood} — Wellness {p.wellnessScore}/10
+                </span>
+                <button className="doc-view-btn-sm" onClick={() => openPatient(p)}>View</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Patients Grid */}
       <h2 className="doc-patients-heading">All Patients</h2>
       {patients.length === 0 ? (
         <div className="doc-empty-state">
@@ -682,12 +704,10 @@ export default function DoctorDashboard() {
             <div
               key={p.id}
               className={`doc-patient-card ${p.hasAlert ? 'doc-patient-card--alert' : ''}`}
-              onClick={() => openPatient(p)}
             >
               {p.hasAlert && <div className="doc-alert-chip">⚠ Needs Attention</div>}
               <div className="doc-patient-avatar">👤</div>
               <h3 className="doc-patient-name">{p.name}</h3>
-              <p className="doc-patient-diag">{p.diagnosisType || 'No diagnosis recorded'}</p>
 
               <div className="doc-patient-mood">
                 {p.latestMood
@@ -714,6 +734,55 @@ export default function DoctorDashboard() {
                 <span className="doc-cog-badge" style={getCognitiveStyle(p.cognitiveStatus)}>
                   {p.cognitiveStatus}
                 </span>
+              )}
+
+              <p className="doc-patient-caregiver">
+                👩‍⚕️ {p.assignedCaregiver ? p.assignedCaregiver.name : 'No caregiver assigned'}
+              </p>
+
+              <div className="doc-card-actions">
+                <button className="doc-view-btn" onClick={() => openPatient(p)}>View</button>
+                <button
+                  className="doc-delete-btn"
+                  onClick={(e) => handleDeletePatient(p, e)}
+                  disabled={deletingPatient === p.id}
+                >
+                  {deletingPatient === p.id ? '…' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Caregivers Section */}
+      <h2 className="doc-patients-heading" style={{ marginTop: '2rem' }}>All Caregivers</h2>
+      {caregivers.length === 0 ? (
+        <div className="doc-empty-state">
+          <p className="doc-empty-icon">👩‍⚕️</p>
+          <p className="doc-empty-title">No caregivers registered yet</p>
+          <p className="doc-empty-sub">Use Manage Team to link caregivers to your team.</p>
+        </div>
+      ) : (
+        <div className="doc-caregivers-grid">
+          {caregivers.map(cg => (
+            <div key={cg.id} className="doc-caregiver-card">
+              <div className="doc-cg-avatar">👩‍⚕️</div>
+              <h3 className="doc-cg-name">{cg.name}</h3>
+              <p className="doc-cg-email">{cg.email}</p>
+              {cg.phone && <p className="doc-cg-phone">📞 {cg.phone}</p>}
+              <div className="doc-cg-patient-badge">
+                {cg.patientCount} patient{cg.patientCount !== 1 ? 's' : ''}
+              </div>
+              {cg.patientNames.length > 0 && (
+                <div className="doc-cg-patient-list">
+                  {cg.patientNames.map((name, i) => (
+                    <span key={i} className="doc-cg-patient-tag">{name}</span>
+                  ))}
+                </div>
+              )}
+              {cg.lastActivityDate && (
+                <p className="doc-cg-activity">Last active: {formatDate(cg.lastActivityDate)}</p>
               )}
             </div>
           ))}
