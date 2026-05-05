@@ -550,3 +550,13 @@
 .cg-legend-green { background: #43a047; }
 .cg-legend-orange { background: #fb8c00; }
 .cg-legend-red { background: #e53935; }
+
+.cg-readonly-badge {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 20px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2e7d32;
+}

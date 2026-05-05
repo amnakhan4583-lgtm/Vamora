@@ -12,10 +12,6 @@ export default function CaregiverDashboard() {
   const [patientDetails, setPatientDetails] = useState(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [newNote, setNewNote] = useState('');
-  const [showAddAppointment, setShowAddAppointment] = useState(false);
-  const [appointment, setAppointment] = useState({
-    title: '', doctorName: '', appointmentType: '', appointmentDate: '', notes: ''
-  });
   const [currentTime, setCurrentTime] = useState(new Date());
 
   const caregiverName = user?.email?.split('@')[0] || 'Caregiver';
@@ -77,27 +73,6 @@ export default function CaregiverDashboard() {
     }
   };
 
-  const handleAddAppointment = async () => {
-    if (!appointment.title || !appointment.appointmentDate) return;
-    try {
-      await api.post(`/caregiver/patients/${selectedPatient.id}/appointments`, appointment);
-      setAppointment({ title: '', doctorName: '', appointmentType: '', appointmentDate: '', notes: '' });
-      setShowAddAppointment(false);
-      fetchPatientDetails(selectedPatient.id);
-    } catch (err) {
-      console.error('Error adding appointment:', err);
-    }
-  };
-
-  const handleDeleteAppointment = async (appointmentId) => {
-    if (!window.confirm('Delete this appointment?')) return;
-    try {
-      await api.delete(`/caregiver/appointments/${appointmentId}`);
-      fetchPatientDetails(selectedPatient.id);
-    } catch (err) {
-      console.error('Error deleting appointment:', err);
-    }
-  };
 
   const getMoodEmoji = (mood) => {
     const emojis = { happy: '😊', calm: '😌', sad: '😔', anxious: '😰', frustrated: '😡', tired: '😴', excited: '🤩', confused: '😕' };
@@ -244,31 +219,12 @@ export default function CaregiverDashboard() {
           )}
         </div>
 
-        {/* Appointments */}
+        {/* Appointments — read-only, managed by doctor */}
         <div className="cg-section">
           <div className="cg-section-header">
             <h2 className="cg-section-title">Appointments</h2>
-            <button className="cg-add-btn" onClick={() => setShowAddAppointment(!showAddAppointment)}>
-              + Add
-            </button>
+            <span className="cg-readonly-badge">Set by Doctor</span>
           </div>
-
-          {showAddAppointment && (
-            <div className="cg-form">
-              <input className="cg-input" placeholder="Title *" value={appointment.title}
-                onChange={e => setAppointment({ ...appointment, title: e.target.value })} />
-              <input className="cg-input" placeholder="Doctor Name" value={appointment.doctorName}
-                onChange={e => setAppointment({ ...appointment, doctorName: e.target.value })} />
-              <input className="cg-input" placeholder="Type (checkup, therapy...)" value={appointment.appointmentType}
-                onChange={e => setAppointment({ ...appointment, appointmentType: e.target.value })} />
-              <input className="cg-input" type="datetime-local" value={appointment.appointmentDate}
-                onChange={e => setAppointment({ ...appointment, appointmentDate: e.target.value })} />
-              <textarea className="cg-input" placeholder="Notes (optional)" value={appointment.notes}
-                onChange={e => setAppointment({ ...appointment, notes: e.target.value })} />
-              <button className="cg-submit-btn" onClick={handleAddAppointment}>Save Appointment</button>
-            </div>
-          )}
-
           {patientDetails.appointments.length === 0 ? (
             <p className="cg-empty">No appointments scheduled.</p>
           ) : (
@@ -282,7 +238,32 @@ export default function CaregiverDashboard() {
                     <p className="cg-appointment-date">{formatDateTime(a.appointmentDate)}</p>
                     {a.notes && <p className="cg-appointment-sub">{a.notes}</p>}
                   </div>
-                  <button className="cg-delete-btn" onClick={() => handleDeleteAppointment(a.id)}>X</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Medications — read-only, managed by doctor */}
+        <div className="cg-section">
+          <div className="cg-section-header">
+            <h2 className="cg-section-title">💊 Medication Schedule</h2>
+            <span className="cg-readonly-badge">Set by Doctor</span>
+          </div>
+          {!patientDetails.medications || patientDetails.medications.length === 0 ? (
+            <p className="cg-empty">No medications prescribed yet.</p>
+          ) : (
+            <div className="cg-appointment-list">
+              {patientDetails.medications.map(m => (
+                <div key={m.id} className="cg-appointment-item">
+                  <div>
+                    <p className="cg-appointment-title">💊 {m.medicationName}</p>
+                    {m.dosage && <p className="cg-appointment-sub">Dose: {m.dosage}</p>}
+                    {m.frequency && <p className="cg-appointment-sub">Frequency: {m.frequency}</p>}
+                    {m.timing && <p className="cg-appointment-sub">Timing: {m.timing}</p>}
+                    {m.startDate && <p className="cg-appointment-sub">Started: {formatDate(m.startDate)}</p>}
+                    {m.notes && <p className="cg-appointment-sub">{m.notes}</p>}
+                  </div>
                 </div>
               ))}
             </div>

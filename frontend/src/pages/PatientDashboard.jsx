@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Camera, MessageCircle, Smile, Scan, Calendar, Clock, X } from 'lucide-react';
+import { Camera, MessageCircle, Smile, Scan, Calendar, Clock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
@@ -10,6 +10,7 @@ const PatientDashboard = () => {
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [appointments, setAppointments] = useState([]);
+  const [medications, setMedications] = useState([]);
   const patientName = user?.profile?.name?.split(' ')[0] || 'Patient';
 
   useEffect(() => {
@@ -17,7 +18,10 @@ const PatientDashboard = () => {
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => { fetchAppointments(); }, []);
+  useEffect(() => {
+    fetchAppointments();
+    fetchMedications();
+  }, []);
 
   const fetchAppointments = async () => {
     try {
@@ -25,6 +29,15 @@ const PatientDashboard = () => {
       setAppointments(data);
     } catch (err) {
       console.error('Error fetching appointments:', err);
+    }
+  };
+
+  const fetchMedications = async () => {
+    try {
+      const { data } = await api.get('/doctor/my-medications');
+      setMedications(data);
+    } catch (err) {
+      console.error('Error fetching medications:', err);
     }
   };
 
@@ -114,6 +127,30 @@ const PatientDashboard = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Medication Reminders */}
+      {medications.length > 0 && (
+        <div className="appointments-section">
+          <h2 className="appointments-title">💊 My Medications</h2>
+          <div className="appointments-list">
+            {medications.map(m => (
+              <div key={m.id} className="appointment-card" style={{ borderLeft: '4px solid #2e7d32' }}>
+                <div className="appointment-icon">💊</div>
+                <div className="appointment-info">
+                  <p className="appointment-title">{m.medicationName}</p>
+                  {m.dosage && <p className="appointment-sub">Dose: {m.dosage}</p>}
+                  {m.frequency && <p className="appointment-sub">{m.frequency}</p>}
+                  {m.timing && (
+                    <p className="appointment-date" style={{ color: '#2e7d32' }}>
+                      {m.timing}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
