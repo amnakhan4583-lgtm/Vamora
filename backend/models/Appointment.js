@@ -12,7 +12,8 @@ module.exports = (sequelize, DataTypes) => {
   Appointment.init({
     id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
     patientId: { type: DataTypes.INTEGER, allowNull: false },
-    caregiverId: { type: DataTypes.INTEGER, allowNull: false },
+    caregiverId: { type: DataTypes.INTEGER, allowNull: true },
+    doctorId: { type: DataTypes.INTEGER, allowNull: true },
     title: { type: DataTypes.STRING, allowNull: false },
     doctorName: { type: DataTypes.STRING, allowNull: true },
     appointmentType: { type: DataTypes.STRING, allowNull: true },

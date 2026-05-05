@@ -126,7 +126,7 @@ router.get('/patients/:patientId', authenticate, async (req, res) => {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
 
-    const [moods, photos, appointments, careNotes] = await Promise.all([
+    const [moods, photos, appointments, careNotes, medications] = await Promise.all([
       db.Mood.findAll({
         where: { patientId: patient.userId },
         order: [['recordedAt', 'DESC']],
@@ -138,13 +138,17 @@ router.get('/patients/:patientId', authenticate, async (req, res) => {
         limit: 5
       }),
       db.Appointment.findAll({
-        where: { patientId: patient.userId, caregiverId: caregiver.id },
+        where: { patientId: patient.userId },
         order: [['appointmentDate', 'ASC']]
       }),
       db.CareNote.findAll({
         where: { patientId: patient.userId, caregiverId: caregiver.id },
         order: [['createdAt', 'DESC']],
         limit: 10
+      }),
+      db.Medication.findAll({
+        where: { patientId: patient.userId },
+        order: [['createdAt', 'DESC']]
       })
     ]);
 
@@ -158,7 +162,7 @@ router.get('/patients/:patientId', authenticate, async (req, res) => {
       moodDate.getFullYear() === today.getFullYear();
     const hasAlert = isMoodToday && ['sad', 'anxious', 'frustrated'].includes(latestMood?.mood);
 
-    res.json({ patient, moods, photos, appointments, careNotes, wellnessScore, hasAlert, latestMood });
+    res.json({ patient, moods, photos, appointments, medications, careNotes, wellnessScore, hasAlert, latestMood });
   } catch (err) {
     console.error('GET PATIENT DETAILS ERROR:', err.message);
     res.status(500).json({ error: err.message });

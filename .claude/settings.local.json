@@ -9,7 +9,9 @@
       "Bash(npx vite *)",
       "Bash(npx sequelize-cli *)",
       "Bash(node -e \"require\\('./src/routes/doctorRoutes'\\); console.log\\('routes OK'\\);\")",
-      "Bash(node -e \"require\\('./server'\\); setTimeout\\(\\(\\) => process.exit\\(0\\), 1000\\);\")"
+      "Bash(node -e \"require\\('./server'\\); setTimeout\\(\\(\\) => process.exit\\(0\\), 1000\\);\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\user\\\\Desktop\\\\Vamora\\\\backend\\\\models\" -File)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }

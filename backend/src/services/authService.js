@@ -13,7 +13,7 @@ const crypto = require('crypto');
  * @returns {Object} Created user and tokens
  */
 const register = async (userData) => {
-  const { email, password, role, name, dateOfBirth, phone } = userData;
+  const { email, password, role, name, dateOfBirth, phone, specialization, licenseNumber } = userData;
 
   // Check if user already exists
   const existingUser = await db.User.findOne({ where: { email } });
@@ -46,8 +46,14 @@ const register = async (userData) => {
         name,
         phone: phone || null
       }, { transaction });
+    } else if (user.role === 'doctor') {
+      await db.Doctor.create({
+        userId: user.id,
+        name,
+        specialization: specialization || null,
+        licenseNumber: licenseNumber || null
+      }, { transaction });
     }
-    // Doctors have no separate profile table — the User record is sufficient.
 
     await transaction.commit();
 
@@ -81,7 +87,8 @@ const login = async (email, password) => {
     where: { email },
     include: [
       { model: db.Patient, as: 'patientProfile' },
-      { model: db.Caregiver, as: 'caregiverProfile' }
+      { model: db.Caregiver, as: 'caregiverProfile' },
+      { model: db.Doctor, as: 'doctorProfile' }
     ]
   });
 
@@ -116,6 +123,7 @@ const login = async (email, password) => {
   let profile = null;
   if (user.role === 'patient') profile = user.patientProfile;
   else if (user.role === 'caregiver') profile = user.caregiverProfile;
+  else if (user.role === 'doctor') profile = user.doctorProfile;
 
   const userResponse = { ...user.toSafeObject(), profile };
 
@@ -136,7 +144,8 @@ const getCurrentUser = async (userId) => {
     attributes: { exclude: ['password'] },
     include: [
       { model: db.Patient, as: 'patientProfile' },
-      { model: db.Caregiver, as: 'caregiverProfile' }
+      { model: db.Caregiver, as: 'caregiverProfile' },
+      { model: db.Doctor, as: 'doctorProfile' }
     ]
   });
 
@@ -147,6 +156,7 @@ const getCurrentUser = async (userId) => {
   let profile = null;
   if (user.role === 'patient') profile = user.patientProfile;
   else if (user.role === 'caregiver') profile = user.caregiverProfile;
+  else if (user.role === 'doctor') profile = user.doctorProfile;
 
   return { ...user.toJSON(), profile };
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, Mail, Heart, Brain, AlertCircle, User, Calendar, Phone } from 'lucide-react';
+import { Lock, Mail, Heart, Brain, AlertCircle, User, Calendar, Phone, Stethoscope, Hash } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import './Register.css';
 
@@ -15,7 +15,9 @@ const Register = () => {
     role: 'patient',
     name: '',
     dateOfBirth: '',
-    phone: ''
+    phone: '',
+    specialization: '',
+    licenseNumber: ''
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -69,6 +71,10 @@ const Register = () => {
       }
       if (formData.role === 'caregiver' && formData.phone) {
         userData.phone = formData.phone;
+      }
+      if (formData.role === 'doctor') {
+        if (formData.specialization) userData.specialization = formData.specialization;
+        if (formData.licenseNumber) userData.licenseNumber = formData.licenseNumber;
       }
 
       const response = await register(userData);
@@ -209,6 +215,42 @@ const Register = () => {
                 placeholder="Enter your phone number"
               />
             </div>
+          )}
+
+          {/* Conditional Fields - Doctor */}
+          {formData.role === 'doctor' && (
+            <>
+              <div className="form-group">
+                <label htmlFor="specialization" className="form-label">
+                  <Stethoscope size={20} />
+                  Specialization (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="specialization"
+                  name="specialization"
+                  value={formData.specialization}
+                  onChange={handleChange}
+                  className="form-input"
+                  placeholder="e.g. Neurology, Geriatrics"
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="licenseNumber" className="form-label">
+                  <Hash size={20} />
+                  License Number (Optional)
+                </label>
+                <input
+                  type="text"
+                  id="licenseNumber"
+                  name="licenseNumber"
+                  value={formData.licenseNumber}
+                  onChange={handleChange}
+                  className="form-input"
+                  placeholder="Medical license number"
+                />
+              </div>
+            </>
           )}
 
           {/* Password */}

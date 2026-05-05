@@ -21,6 +21,12 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'userId',
         as: 'caregiverProfile'
       });
+
+      // User has one Doctor profile (if role is doctor)
+      User.hasOne(models.Doctor, {
+        foreignKey: 'userId',
+        as: 'doctorProfile'
+      });
     }
 
     /**
