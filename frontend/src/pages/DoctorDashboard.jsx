@@ -80,21 +80,29 @@ export default function DoctorDashboard() {
   useEffect(() => { loadOverview(); }, []);
 
   async function loadOverview() {
-    try {
-      setLoading(true);
-      setLoadError('');
-      const [pRes, cRes] = await Promise.all([
-        api.get('/doctor/patients'),
-        api.get('/doctor/caregivers')
-      ]);
-      setPatients(pRes.data.data || []);
-      setCaregivers(cRes.data.data || []);
-    } catch (err) {
-      console.error('Doctor overview load error:', err);
-      setLoadError(err.response?.data?.message || 'Failed to load dashboard. Please restart the server and refresh.');
-    } finally {
-      setLoading(false);
+    setLoading(true);
+    setLoadError('');
+    const [pResult, cResult] = await Promise.allSettled([
+      api.get('/doctor/patients'),
+      api.get('/doctor/caregivers')
+    ]);
+
+    if (pResult.status === 'fulfilled') {
+      setPatients(pResult.value.data.data || []);
+    } else {
+      const msg = pResult.reason?.response?.data?.message || pResult.reason?.message || 'Unknown error';
+      console.error('Failed to load patients:', msg);
+      setLoadError(`Patient list failed to load: ${msg}`);
     }
+
+    if (cResult.status === 'fulfilled') {
+      setCaregivers(cResult.value.data.data || []);
+    } else {
+      console.error('Failed to load caregivers:', cResult.reason?.message);
+      // Caregivers failing does not block the patient view
+    }
+
+    setLoading(false);
   }
 
   async function openPatient(patient) {
