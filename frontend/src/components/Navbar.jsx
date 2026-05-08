@@ -17,9 +17,10 @@ const Navbar = () => {
     navigate(-1);
   };
 
-  // Don't show navbar on authentication pages
+  // Don't show navbar on authentication pages or super-admin dashboard
   const authPages = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
   if (authPages.includes(location.pathname)) return null;
+  if (user?.role === 'super_admin') return null;
 
   // Pages where back button should not be shown (landing pages after login)
   const noBackPages = ['/role-selection', '/patient-dashboard', '/caregiver-dashboard', '/doctor-dashboard'];

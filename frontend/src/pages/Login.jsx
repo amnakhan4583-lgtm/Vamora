@@ -22,6 +22,7 @@ const Login = () => {
       if (user.role === 'patient') navigate('/patient-dashboard');
       else if (user.role === 'caregiver') navigate('/caregiver-dashboard');
       else if (user.role === 'doctor') navigate('/doctor-dashboard');
+      else if (user.role === 'super_admin') navigate('/super-admin-dashboard');
       else navigate('/role-selection');
     }
   }, [isAuthenticated, user, navigate]);
@@ -48,6 +49,7 @@ const Login = () => {
       if (userRole === 'patient') navigate('/patient-dashboard');
       else if (userRole === 'caregiver') navigate('/caregiver-dashboard');
       else if (userRole === 'doctor') navigate('/doctor-dashboard');
+      else if (userRole === 'super_admin') navigate('/super-admin-dashboard');
       else navigate('/role-selection');
     } catch (err) {
       console.error('Login error:', err);

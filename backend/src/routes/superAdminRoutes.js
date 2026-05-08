@@ -198,11 +198,11 @@ router.get('/logs', ...guard, async (req, res) => {
 
 // ══════════════════════════════════════════════════════════════════════════════
 // PATCH /super-admin/doctors/:id/lock — toggle isLocked on Doctor record
-// :id is the Doctor table primary key (doctors.id)
+// :id is the User table primary key (users.id) — matches what GET /users returns
 // ══════════════════════════════════════════════════════════════════════════════
 router.patch('/doctors/:id/lock', ...guard, async (req, res) => {
   try {
-    const doctor = await db.Doctor.findByPk(req.params.id);
+    const doctor = await db.Doctor.findOne({ where: { userId: req.params.id } });
     if (!doctor) return res.status(404).json({ message: 'Doctor not found.' });
 
     await doctor.update({ isLocked: !doctor.isLocked });

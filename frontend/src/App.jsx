@@ -14,6 +14,7 @@ import TalkToCompanion from './pages/TalkToCompanion';
 import CaregiverDashboard from './pages/CaregiverDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import MoodAssessment from './pages/MoodAssessment';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import './App.css';
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           <Route path="/mood-assessment" element={<ProtectedRoute allowedRoles={['patient']}><MoodAssessment /></ProtectedRoute>} />
           <Route path="/caregiver-dashboard" element={<ProtectedRoute allowedRoles={['caregiver']}><CaregiverDashboard /></ProtectedRoute>} />
           <Route path="/doctor-dashboard" element={<ProtectedRoute allowedRoles={['doctor']}><DoctorDashboard /></ProtectedRoute>} />
+          <Route path="/super-admin-dashboard" element={<ProtectedRoute allowedRoles={['super_admin']}><SuperAdminDashboard /></ProtectedRoute>} />
         </Routes>
       </Router>
     </AuthProvider>
