@@ -13,7 +13,8 @@ module.exports = (sequelize, DataTypes) => {
     userId: { type: DataTypes.INTEGER, allowNull: false, unique: true },
     name: { type: DataTypes.STRING, allowNull: true },
     specialization: { type: DataTypes.STRING, allowNull: true },
-    licenseNumber: { type: DataTypes.STRING, allowNull: true }
+    licenseNumber: { type: DataTypes.STRING, allowNull: true },
+    isLocked: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
   }, {
     sequelize,
     modelName: 'Doctor',

@@ -57,21 +57,23 @@ app.get('/api', (req, res) => {
   });
 });
 
-const authRoutes = require('./src/routes/authRoutes');
-const userRoutes = require('./src/routes/userRoutes');
-const photoRoutes = require('./src/routes/photos');
-const caregiverRoutes = require('./src/routes/caregiverRoutes');
-const moodRoutes = require('./src/routes/moodRoutes');
-const companionRoutes = require('./src/routes/companionRoutes');
-const doctorRoutes = require('./src/routes/doctorRoutes');
+const authRoutes       = require('./src/routes/authRoutes');
+const userRoutes       = require('./src/routes/userRoutes');
+const photoRoutes      = require('./src/routes/photos');
+const caregiverRoutes  = require('./src/routes/caregiverRoutes');
+const moodRoutes       = require('./src/routes/moodRoutes');
+const companionRoutes  = require('./src/routes/companionRoutes');
+const doctorRoutes     = require('./src/routes/doctorRoutes');
+const superAdminRoutes = require('./src/routes/superAdminRoutes');
 
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/users', userRoutes);
-app.use('/api/v1/photos', photoRoutes);
-app.use('/api/v1/caregiver', caregiverRoutes);
-app.use('/api/v1/moods', moodRoutes);
-app.use('/api/v1/companion', companionRoutes);
-app.use('/api/v1/doctor', doctorRoutes);
+app.use('/api/v1/auth',        authRoutes);
+app.use('/api/v1/users',       userRoutes);
+app.use('/api/v1/photos',      photoRoutes);
+app.use('/api/v1/caregiver',   caregiverRoutes);
+app.use('/api/v1/moods',       moodRoutes);
+app.use('/api/v1/companion',   companionRoutes);
+app.use('/api/v1/doctor',      doctorRoutes);
+app.use('/api/v1/super-admin', superAdminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

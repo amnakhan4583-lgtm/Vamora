@@ -103,8 +103,23 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
+/**
+ * Middleware that allows only super_admin users.
+ * Must be used after `authenticate`.
+ */
+const requireSuperAdmin = (req, res, next) => {
+  if (!req.user) {
+    return res.status(401).json({ status: 'error', message: 'Authentication required.' });
+  }
+  if (req.user.role !== 'super_admin') {
+    return res.status(403).json({ status: 'error', message: 'Super-admin access required.' });
+  }
+  next();
+};
+
 module.exports = {
   authenticate,
   authorize,
-  optionalAuth
+  optionalAuth,
+  requireSuperAdmin
 };
