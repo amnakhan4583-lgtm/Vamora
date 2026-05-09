@@ -33,7 +33,8 @@ module.exports = (sequelize, DataTypes) => {
       references: { model: 'users', key: 'id' },
       onUpdate: 'CASCADE',
       onDelete: 'SET NULL'
-    }
+    },
+    isLocked: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }
   }, {
     sequelize,
     modelName: 'Caregiver',

@@ -31,7 +31,7 @@ function resolveName(user) {
 
 const profileIncludes = [
   { model: db.Patient,   as: 'patientProfile',   attributes: ['name'] },
-  { model: db.Caregiver, as: 'caregiverProfile',  attributes: ['name'] },
+  { model: db.Caregiver, as: 'caregiverProfile',  attributes: ['name', 'isLocked'] },
   { model: db.Doctor,    as: 'doctorProfile',     attributes: ['name', 'isLocked'] }
 ];
 
@@ -161,7 +161,7 @@ router.get('/users', ...guard, async (req, res) => {
       role:      u.role,
       isActive:  u.isActive,
       name:      resolveName(u),
-      isLocked:  u.doctorProfile?.isLocked ?? null,
+      isLocked:  u.doctorProfile?.isLocked ?? u.caregiverProfile?.isLocked ?? null,
       createdAt: u.createdAt
     })));
   } catch (err) {
@@ -214,6 +214,27 @@ router.patch('/doctors/:id/lock', ...guard, async (req, res) => {
     });
   } catch (err) {
     console.error('LOCK DOCTOR ERROR:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PATCH /super-admin/caregivers/:id/lock — toggle isLocked on Caregiver record
+// :id is the User table primary key (users.id)
+// ══════════════════════════════════════════════════════════════════════════════
+router.patch('/caregivers/:id/lock', ...guard, async (req, res) => {
+  try {
+    const caregiver = await db.Caregiver.findOne({ where: { userId: req.params.id } });
+    if (!caregiver) return res.status(404).json({ message: 'Caregiver not found.' });
+
+    await caregiver.update({ isLocked: !caregiver.isLocked });
+
+    res.json({
+      message:  `Caregiver ${caregiver.isLocked ? 'locked' : 'unlocked'} successfully.`,
+      isLocked: caregiver.isLocked
+    });
+  } catch (err) {
+    console.error('LOCK CAREGIVER ERROR:', err.message);
     res.status(500).json({ message: err.message });
   }
 });

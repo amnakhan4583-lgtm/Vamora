@@ -150,7 +150,6 @@ const Login = () => {
 
         {/* Footer */}
         <div className="login-footer">
-          <p>Don't have an account? <Link to="/register" className="signup-link">Sign Up</Link></p>
           <p className="privacy-text">Protected by industry-standard encryption</p>
         </div>
       </div>

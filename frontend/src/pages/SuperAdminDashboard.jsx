@@ -39,10 +39,11 @@ const timeAgo = (d) => {
 };
 
 const TABS = [
-  { key: 'create',  label: 'Create User',    Icon: Plus   },
-  { key: 'users',   label: 'All Users',       Icon: Users  },
-  { key: 'logs',    label: 'Logs',            Icon: FileText },
-  { key: 'doctors', label: 'Doctor Access',  Icon: Shield },
+  { key: 'create',     label: 'Create User',      Icon: Plus     },
+  { key: 'users',      label: 'All Users',         Icon: Users    },
+  { key: 'logs',       label: 'Logs',              Icon: FileText },
+  { key: 'doctors',    label: 'Doctor Access',     Icon: Shield   },
+  { key: 'caregivers', label: 'Caregiver Access',  Icon: Users    },
 ];
 
 const BLANK_FORM = {
@@ -81,6 +82,12 @@ const SuperAdminDashboard = () => {
   const [doctorsError, setDoctorsError] = useState('');
   const [lockingId, setLockingId]       = useState(null);
 
+  // Caregiver Access
+  const [caregivers, setCaregivers]         = useState([]);
+  const [cgLoading, setCgLoading]           = useState(false);
+  const [cgError, setCgError]               = useState('');
+  const [cgLockingId, setCgLockingId]       = useState(null);
+
   const loadUsers = useCallback(async () => {
     setUsersLoading(true); setUsersError('');
     try {
@@ -111,11 +118,22 @@ const SuperAdminDashboard = () => {
     } finally { setDoctorsLoading(false); }
   }, []);
 
+  const loadCaregivers = useCallback(async () => {
+    setCgLoading(true); setCgError('');
+    try {
+      const r = await api.get('/super-admin/users');
+      setCaregivers(r.data.filter(u => u.role === 'caregiver'));
+    } catch (e) {
+      setCgError(e.response?.data?.message || 'Failed to load caregivers.');
+    } finally { setCgLoading(false); }
+  }, []);
+
   useEffect(() => {
-    if (activeTab === 'users')   loadUsers();
-    else if (activeTab === 'logs')    loadLogs();
-    else if (activeTab === 'doctors') loadDoctors();
-  }, [activeTab, loadUsers, loadLogs, loadDoctors]);
+    if (activeTab === 'users')        loadUsers();
+    else if (activeTab === 'logs')        loadLogs();
+    else if (activeTab === 'doctors')     loadDoctors();
+    else if (activeTab === 'caregivers')  loadCaregivers();
+  }, [activeTab, loadUsers, loadLogs, loadDoctors, loadCaregivers]);
 
   const handleChange = (e) => {
     setForm(p => ({ ...p, [e.target.name]: e.target.value }));
@@ -156,6 +174,16 @@ const SuperAdminDashboard = () => {
     } catch (e) {
       setUsersError(e.response?.data?.message || 'Failed to delete user.');
     } finally { setDeletingId(null); }
+  };
+
+  const handleToggleCaregiverLock = async (userId) => {
+    setCgLockingId(userId);
+    try {
+      const r = await api.patch(`/super-admin/caregivers/${userId}/lock`);
+      setCaregivers(prev => prev.map(c => c.id === userId ? { ...c, isLocked: r.data.isLocked } : c));
+    } catch (e) {
+      setCgError(e.response?.data?.message || 'Failed to toggle lock.');
+    } finally { setCgLockingId(null); }
   };
 
   const handleToggleLock = async (userId) => {
@@ -492,6 +520,63 @@ const SuperAdminDashboard = () => {
                       {lockingId === doc.id
                         ? '…'
                         : doc.isLocked
+                          ? <><Unlock size={14} /> Unlock Access</>
+                          : <><Lock size={14} /> Lock Access</>
+                      }
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══ CAREGIVER ACCESS ══ */}
+        {activeTab === 'caregivers' && (
+          <div className="sa-section">
+            <div className="sa-section-header">
+              <div>
+                <h2 className="sa-section-title" style={{ marginBottom: 0 }}>Caregiver Access Control</h2>
+                <p style={{ margin: '0.2rem 0 0', fontSize: '0.82rem', color: '#9e9e9e' }}>
+                  Lock or unlock caregiver portal access
+                </p>
+              </div>
+              <button className="sa-refresh-btn" onClick={loadCaregivers} disabled={cgLoading}>
+                {cgLoading ? 'Loading…' : 'Refresh'}
+              </button>
+            </div>
+
+            {cgError && (
+              <div className="sa-alert sa-alert--error"><X size={16} /> {cgError}</div>
+            )}
+
+            {cgLoading ? (
+              <div className="sa-loading"><div className="sa-spinner" /></div>
+            ) : (
+              <div className="sa-doctor-grid">
+                {caregivers.length === 0 ? (
+                  <p className="sa-empty">No caregivers found.</p>
+                ) : caregivers.map(cg => (
+                  <div
+                    key={cg.id}
+                    className={`sa-doctor-card${cg.isLocked ? ' sa-doctor-card--locked' : ''}`}
+                  >
+                    {cg.isLocked && <div className="sa-locked-chip">LOCKED</div>}
+                    <div className="sa-doctor-avatar">🤝</div>
+                    <p className="sa-doctor-name">{cg.name || '—'}</p>
+                    <p className="sa-doctor-email">{cg.email}</p>
+                    <div className={`sa-doctor-status ${cg.isLocked ? 'sa-status--locked' : 'sa-status--active'}`}>
+                      {cg.isLocked ? <Lock size={13} /> : <Unlock size={13} />}
+                      {cg.isLocked ? 'Locked' : 'Active'}
+                    </div>
+                    <button
+                      className={`sa-lock-btn ${cg.isLocked ? 'sa-lock-btn--unlock' : 'sa-lock-btn--lock'}`}
+                      onClick={() => handleToggleCaregiverLock(cg.id)}
+                      disabled={cgLockingId === cg.id}
+                    >
+                      {cgLockingId === cg.id
+                        ? '…'
+                        : cg.isLocked
                           ? <><Unlock size={14} /> Unlock Access</>
                           : <><Lock size={14} /> Lock Access</>
                       }
