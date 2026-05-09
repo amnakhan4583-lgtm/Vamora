@@ -67,6 +67,8 @@ const SuperAdminDashboard = () => {
   const [users, setUsers]           = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState('');
+  const [usersSuccess, setUsersSuccess] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   // Logs
   const [logs, setLogs]             = useState([]);
@@ -139,6 +141,21 @@ const SuperAdminDashboard = () => {
     } catch (e) {
       setCreateError(e.response?.data?.message || 'Failed to create user.');
     } finally { setCreating(false); }
+  };
+
+  const handleDeleteUser = async (u) => {
+    const label = u.name || u.email;
+    if (!window.confirm(`Are you sure you want to delete ${label}?`)) return;
+    setDeletingId(u.id);
+    setUsersError('');
+    setUsersSuccess('');
+    try {
+      await api.delete(`/super-admin/users/${u.id}`);
+      setUsers(prev => prev.filter(x => x.id !== u.id));
+      setUsersSuccess('User deleted successfully.');
+    } catch (e) {
+      setUsersError(e.response?.data?.message || 'Failed to delete user.');
+    } finally { setDeletingId(null); }
   };
 
   const handleToggleLock = async (userId) => {
@@ -313,6 +330,9 @@ const SuperAdminDashboard = () => {
             {usersError && (
               <div className="sa-alert sa-alert--error"><X size={16} /> {usersError}</div>
             )}
+            {usersSuccess && (
+              <div className="sa-alert sa-alert--success"><CheckCircle size={16} /> {usersSuccess}</div>
+            )}
 
             {usersLoading ? (
               <div className="sa-loading"><div className="sa-spinner" /></div>
@@ -326,11 +346,12 @@ const SuperAdminDashboard = () => {
                       <th>Role</th>
                       <th>Status</th>
                       <th>Joined</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.length === 0 ? (
-                      <tr><td colSpan={5} className="sa-empty">No users found.</td></tr>
+                      <tr><td colSpan={6} className="sa-empty">No users found.</td></tr>
                     ) : users.map(u => (
                       <tr key={u.id}>
                         <td className="sa-td-name">{u.name || '—'}</td>
@@ -349,6 +370,23 @@ const SuperAdminDashboard = () => {
                           )}
                         </td>
                         <td className="sa-td-date">{formatDate(u.createdAt)}</td>
+                        <td>
+                          {u.role !== 'super_admin' && (
+                            <button
+                              onClick={() => handleDeleteUser(u)}
+                              disabled={deletingId === u.id}
+                              style={{
+                                background: '#ffebee', color: '#c62828',
+                                border: '1.5px solid #ef9a9a', borderRadius: '8px',
+                                padding: '0.3rem 0.7rem', fontSize: '0.8rem',
+                                fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap',
+                                opacity: deletingId === u.id ? 0.5 : 1,
+                              }}
+                            >
+                              {deletingId === u.id ? '…' : 'Delete'}
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -218,4 +218,22 @@ router.patch('/doctors/:id/lock', ...guard, async (req, res) => {
   }
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// DELETE /super-admin/users/:id — permanently remove a user account
+// ══════════════════════════════════════════════════════════════════════════════
+router.delete('/users/:id', ...guard, async (req, res) => {
+  try {
+    const user = await db.User.findByPk(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    if (user.role === 'super_admin') {
+      return res.status(403).json({ message: 'Cannot delete super admin account.' });
+    }
+    await user.destroy();
+    res.json({ message: 'User deleted successfully.' });
+  } catch (err) {
+    console.error('DELETE USER ERROR:', err.message);
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
