@@ -4,6 +4,7 @@ const router = express.Router();
 const db = require('../../models');
 const { authenticate } = require('../middlewares/auth');
 const { Op } = require('sequelize');
+const upload = require('../middlewares/upload');
 
 // ─── Helper: Get Caregiver Profile ───────────────────────────────────────────
 const getCaregiverProfile = async (userId) => {
@@ -211,6 +212,74 @@ router.post('/patients/:patientId/notes', authenticate, async (req, res) => {
     res.json(careNote);
   } catch (err) {
     console.error('ADD NOTE ERROR:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── POST Upload Photo for Patient ───────────────────────────────────────────
+router.post('/patients/:patientId/photos', authenticate, upload.single('photo'), async (req, res) => {
+  try {
+    const caregiver = await getCaregiverProfile(req.user.id);
+    if (!caregiver) return res.status(404).json({ error: 'Caregiver profile not found.' });
+
+    const patient = await db.Patient.findByPk(req.params.patientId);
+    if (!patient) return res.status(404).json({ error: 'Patient not found.' });
+
+    const relationship = await db.sequelize.query(
+      `SELECT * FROM patient_caregiver_relationships WHERE patient_id = :patientId AND caregiver_id = :caregiverId`,
+      { replacements: { patientId: patient.id, caregiverId: caregiver.id }, type: db.sequelize.QueryTypes.SELECT }
+    );
+    if (relationship.length === 0) return res.status(403).json({ error: 'Not authorized for this patient.' });
+
+    if (!req.file) return res.status(400).json({ error: 'Photo file is required.' });
+
+    const { caption, category } = req.body;
+    if (!caption) return res.status(400).json({ error: 'Caption is required.' });
+
+    const validCategories = ['family', 'home', 'pet', 'memory'];
+    if (category && !validCategories.includes(category)) {
+      return res.status(400).json({ error: `Category must be one of: ${validCategories.join(', ')}.` });
+    }
+
+    const photo = await db.Photo.create({
+      patientId: patient.userId,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      caption,
+      category: category || 'memory',
+      takenAt: new Date(),
+    });
+
+    res.status(201).json(photo);
+  } catch (err) {
+    console.error('UPLOAD PHOTO ERROR:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── GET Photos for Patient ───────────────────────────────────────────────────
+router.get('/patients/:patientId/photos', authenticate, async (req, res) => {
+  try {
+    const caregiver = await getCaregiverProfile(req.user.id);
+    if (!caregiver) return res.status(404).json({ error: 'Caregiver profile not found.' });
+
+    const patient = await db.Patient.findByPk(req.params.patientId);
+    if (!patient) return res.status(404).json({ error: 'Patient not found.' });
+
+    const relationship = await db.sequelize.query(
+      `SELECT * FROM patient_caregiver_relationships WHERE patient_id = :patientId AND caregiver_id = :caregiverId`,
+      { replacements: { patientId: patient.id, caregiverId: caregiver.id }, type: db.sequelize.QueryTypes.SELECT }
+    );
+    if (relationship.length === 0) return res.status(403).json({ error: 'Not authorized for this patient.' });
+
+    const photos = await db.Photo.findAll({
+      where: { patientId: patient.userId },
+      order: [['takenAt', 'DESC']],
+    });
+
+    res.json(photos);
+  } catch (err) {
+    console.error('GET PHOTOS ERROR:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

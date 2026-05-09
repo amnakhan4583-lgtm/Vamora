@@ -32,8 +32,13 @@ module.exports = (sequelize, DataTypes) => {
     takenAt: { 
       type: DataTypes.DATE 
     },
-    voiceNoteUrl: { 
-      type: DataTypes.STRING    // ✅ optional
+    voiceNoteUrl: {
+      type: DataTypes.STRING
+    },
+    category: {
+      type: DataTypes.ENUM('family', 'home', 'pet', 'memory'),
+      allowNull: false,
+      defaultValue: 'memory',
     },
   }, {
     sequelize,
