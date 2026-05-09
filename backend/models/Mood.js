@@ -25,6 +25,12 @@ module.exports = (sequelize, DataTypes) => {
     note: {
       type: DataTypes.TEXT
     },
+    source: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'manual',
+      validate: { isIn: [['manual', 'camera']] }
+    },
     recordedAt: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW

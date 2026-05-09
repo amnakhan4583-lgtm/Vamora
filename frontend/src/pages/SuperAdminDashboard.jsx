@@ -1,19 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import {
   Shield, Users, FileText, Lock, Unlock,
   Plus, Eye, EyeOff, LogOut, X, CheckCircle
 } from 'lucide-react';
 import './SuperAdminDashboard.css';
-
-const api = axios.create({ baseURL: 'http://localhost:5000/api/v1' });
-api.interceptors.request.use(cfg => {
-  const token = localStorage.getItem('accessToken');
-  if (token) cfg.headers.Authorization = `Bearer ${token}`;
-  return cfg;
-});
 
 const roleBadgeStyle = (role) => {
   const map = {

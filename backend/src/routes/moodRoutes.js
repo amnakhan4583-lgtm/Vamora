@@ -7,13 +7,14 @@ const { authenticate } = require('../middlewares/auth');
 // Save a mood check-in
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { mood, note } = req.body;
+    const { mood, note, source } = req.body;
     if (!mood) return res.status(400).json({ error: 'Mood is required.' });
 
     const entry = await Mood.create({
       patientId: req.user.id,
       mood,
       note: note || '',
+      source: source === 'camera' ? 'camera' : 'manual',
       recordedAt: new Date(),
     });
 

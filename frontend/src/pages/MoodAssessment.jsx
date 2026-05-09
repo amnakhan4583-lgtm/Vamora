@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as faceapi from 'face-api.js';
 import { ArrowLeft, Camera, X, CheckCircle, RefreshCw, Send } from 'lucide-react';
+import api from '../services/api';
 import './MoodAssessment.css';
 
 // Keys match the expression labels returned by face-api.js exactly
@@ -13,6 +14,17 @@ const EXPRESSION_MAP = {
   surprised: { label: 'Surprised',  emoji: '😮', color: '#8e24aa' },
   angry:     { label: 'Frustrated', emoji: '😡', color: '#e53935' },
   disgusted: { label: 'Disgusted',  emoji: '🤢', color: '#558b2f' },
+};
+
+// Maps face-api expression labels → mood values accepted by the /moods backend
+const API_MOOD_MAP = {
+  happy:     'happy',
+  neutral:   'calm',
+  sad:       'sad',
+  fearful:   'anxious',
+  angry:     'frustrated',
+  disgusted: 'frustrated',
+  surprised: 'excited',
 };
 
 // Model weight files served from public/models (downloaded at install time)
@@ -73,7 +85,7 @@ async function detectMoodFromDataUrl(dataUrl) {
     .reduce((best, cur) => (cur[1] > best[1] ? cur : best));
 
   const mood = EXPRESSION_MAP[topExpression] ?? EXPRESSION_MAP.neutral;
-  return { ...mood, confidence: Math.round(topScore * 100) };
+  return { ...mood, expression: topExpression, confidence: Math.round(topScore * 100) };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,6 +95,7 @@ export default function MoodAssessment() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
+  const toastTimerRef = useRef(null);
 
   const [history, setHistory] = useState(() => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
@@ -96,6 +109,8 @@ export default function MoodAssessment() {
   const [latestResult, setLatestResult] = useState(null);
   const [modelsReady, setModelsReady] = useState(false);
   const [modelError, setModelError] = useState(null);
+  // null | 'db' | 'local'
+  const [savedToast, setSavedToast] = useState(null);
 
   // Load TinyFaceDetector + FaceExpressionNet weights on mount
   useEffect(() => {
@@ -122,8 +137,11 @@ export default function MoodAssessment() {
     }
   }, [cameraState]);
 
-  // Stop camera tracks on unmount
-  useEffect(() => () => stopStream(), []);
+  // Stop camera tracks and clear toast timer on unmount
+  useEffect(() => () => {
+    stopStream();
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+  }, []);
 
   const stopStream = () => {
     if (streamRef.current) {
@@ -208,6 +226,19 @@ export default function MoodAssessment() {
     setHistory(prev => [entry, ...prev]);
     setLatestResult(entry);
     setCameraState('idle');
+
+    // Persist to backend; localStorage is already saved via the history useEffect
+    const apiMood = API_MOOD_MAP[result.expression] || 'calm';
+    let toastType = 'local';
+    try {
+      await api.post('/moods', { mood: apiMood, note: 'Detected via camera', source: 'camera' });
+      toastType = 'db';
+    } catch (err) {
+      console.error('Backend mood save failed, kept in localStorage:', err);
+    }
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setSavedToast(toastType);
+    toastTimerRef.current = setTimeout(() => setSavedToast(null), 3000);
   };
 
   const closeCamera = () => {
@@ -375,6 +406,23 @@ export default function MoodAssessment() {
           <button className="ma-scan-again-btn" onClick={startScan}>
             Scan Again
           </button>
+        </div>
+      )}
+
+      {/* ── Save Toast ── */}
+      {savedToast && (
+        <div style={{
+          position: 'fixed', bottom: '2rem', left: '50%',
+          transform: 'translateX(-50%)',
+          background: savedToast === 'db' ? '#2e7d32' : '#f57c00',
+          color: 'white', borderRadius: '12px',
+          padding: '0.7rem 1.4rem', fontWeight: 600, fontSize: '0.95rem',
+          boxShadow: '0 4px 18px rgba(0,0,0,0.22)',
+          zIndex: 9999, display: 'flex', alignItems: 'center', gap: '0.5rem',
+          whiteSpace: 'nowrap',
+        }}>
+          <CheckCircle size={18} />
+          {savedToast === 'db' ? 'Mood saved to your record' : 'Saved locally'}
         </div>
       )}
 
