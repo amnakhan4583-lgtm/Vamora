@@ -77,6 +77,18 @@ export default function DoctorDashboard() {
   const [linkError, setLinkError] = useState('');
   const [linking, setLinking] = useState(false);
 
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [addPatientForm, setAddPatientForm] = useState({ name: '', email: '', password: '' });
+  const [addPatientError, setAddPatientError] = useState('');
+  const [addPatientSuccess, setAddPatientSuccess] = useState('');
+  const [addingPatient, setAddingPatient] = useState(false);
+
+  const [showAssignCaregiver, setShowAssignCaregiver] = useState(false);
+  const [assignCaregiverId, setAssignCaregiverId] = useState('');
+  const [assignSuccess, setAssignSuccess] = useState('');
+  const [assignError, setAssignError] = useState('');
+  const [assigning, setAssigning] = useState(false);
+
   useEffect(() => { loadOverview(); }, []);
 
   async function loadOverview() {
@@ -127,6 +139,9 @@ export default function DoctorDashboard() {
     setShowApptForm(false);
     setShowMedForm(false);
     setShowMmseForm(false);
+    setShowAssignCaregiver(false);
+    setAssignSuccess('');
+    setAssignError('');
   }
 
   async function handleDeletePatient(patient, e) {
@@ -239,6 +254,45 @@ export default function DoctorDashboard() {
     }
   }
 
+  async function handleAddPatient() {
+    const { name, email, password } = addPatientForm;
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setAddPatientError('Name, email, and password are required.');
+      return;
+    }
+    setAddingPatient(true);
+    setAddPatientError('');
+    try {
+      await api.post('/doctor/team/patients', { name: name.trim(), email: email.trim(), password });
+      setAddPatientSuccess('Patient added successfully');
+      setAddPatientForm({ name: '', email: '', password: '' });
+      await loadOverview();
+      setTimeout(() => { setShowAddPatientModal(false); setAddPatientSuccess(''); }, 2000);
+    } catch (err) {
+      setAddPatientError(err.response?.data?.message || 'Failed to add patient.');
+    } finally {
+      setAddingPatient(false);
+    }
+  }
+
+  async function handleAssignCaregiver() {
+    if (!assignCaregiverId) { setAssignError('Please select a caregiver.'); return; }
+    setAssigning(true);
+    setAssignError('');
+    try {
+      await api.post('/doctor/team/caregivers/link', { patientId: selectedPatient.id, caregiverId: assignCaregiverId });
+      setAssignSuccess('Caregiver assigned successfully');
+      setAssignCaregiverId('');
+      await refreshDetails();
+      await loadOverview();
+      setTimeout(() => { setShowAssignCaregiver(false); setAssignSuccess(''); }, 2000);
+    } catch (err) {
+      setAssignError(err.response?.data?.message || 'Failed to assign caregiver.');
+    } finally {
+      setAssigning(false);
+    }
+  }
+
   const decliningCount = patients.filter(p => p.cognitiveStatus === 'Declining').length;
   const stableCount = patients.filter(p => p.cognitiveStatus === 'Stable').length;
   const alertPatients = patients.filter(p => p.hasAlert);
@@ -279,7 +333,28 @@ export default function DoctorDashboard() {
               </span>
             )}
           </div>
+          <button className="doc-add-btn" onClick={() => { setShowAssignCaregiver(v => !v); setAssignError(''); setAssignSuccess(''); }}>
+            {showAssignCaregiver ? 'Cancel' : 'Assign Caregiver'}
+          </button>
         </div>
+
+        {showAssignCaregiver && (
+          <div className="doc-form-card">
+            <h3 className="doc-section-title" style={{ marginBottom: '0.75rem' }}>Assign Caregiver to {selectedPatient.name}</h3>
+            <select className="doc-input" value={assignCaregiverId}
+              onChange={e => { setAssignCaregiverId(e.target.value); setAssignError(''); }}>
+              <option value="">Select a caregiver…</option>
+              {caregivers.map(cg => (
+                <option key={cg.id} value={cg.id}>{cg.name} ({cg.email})</option>
+              ))}
+            </select>
+            {assignError && <p className="doc-error">{assignError}</p>}
+            {assignSuccess && <p style={{ color: '#43a047', fontWeight: 600, marginTop: '0.5rem' }}>{assignSuccess}</p>}
+            <button className="doc-save-btn" onClick={handleAssignCaregiver} disabled={assigning}>
+              {assigning ? 'Assigning…' : 'Assign Caregiver'}
+            </button>
+          </div>
+        )}
 
         {detailsLoading || !details ? (
           <div className="doc-loading"><div className="doc-spinner" /><p>Loading patient data…</p></div>
@@ -659,7 +734,10 @@ export default function DoctorDashboard() {
           <h1 className="doc-title">Dr. {displayName}'s Dashboard</h1>
           <p className="doc-subtitle">{user?.profile?.specialization || 'Virtual Memory Companion'}</p>
         </div>
-        <button className="doc-team-btn" onClick={() => setView('team')}>Manage Team</button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button className="doc-add-btn" onClick={() => { setShowAddPatientModal(true); setAddPatientError(''); setAddPatientSuccess(''); }}>+ Add Patient</button>
+          <button className="doc-team-btn" onClick={() => setView('team')}>Manage Team</button>
+        </div>
       </div>
 
       {loadError && (
@@ -770,6 +848,30 @@ export default function DoctorDashboard() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Add Patient Modal */}
+      {showAddPatientModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="doc-form-card" style={{ width: '100%', maxWidth: '420px', position: 'relative' }}>
+            <button className="doc-cred-close" style={{ position: 'absolute', top: '1rem', right: '1rem' }}
+              onClick={() => { setShowAddPatientModal(false); setAddPatientError(''); setAddPatientSuccess(''); }}>✕</button>
+            <h2 className="doc-section-title" style={{ marginBottom: '1rem' }}>Add Patient</h2>
+            <div className="doc-form-grid">
+              <input className="doc-input" placeholder="Full name *" value={addPatientForm.name}
+                onChange={e => { setAddPatientForm(p => ({ ...p, name: e.target.value })); setAddPatientError(''); }} />
+              <input className="doc-input" type="email" placeholder="Email address *" value={addPatientForm.email}
+                onChange={e => { setAddPatientForm(p => ({ ...p, email: e.target.value })); setAddPatientError(''); }} />
+              <input className="doc-input" type="password" placeholder="Password *" value={addPatientForm.password}
+                onChange={e => { setAddPatientForm(p => ({ ...p, password: e.target.value })); setAddPatientError(''); }} />
+            </div>
+            {addPatientError && <p className="doc-error">{addPatientError}</p>}
+            {addPatientSuccess && <p style={{ color: '#43a047', fontWeight: 600, marginTop: '0.5rem' }}>{addPatientSuccess}</p>}
+            <button className="doc-save-btn" onClick={handleAddPatient} disabled={addingPatient}>
+              {addingPatient ? 'Adding…' : 'Add Patient'}
+            </button>
+          </div>
         </div>
       )}
 
