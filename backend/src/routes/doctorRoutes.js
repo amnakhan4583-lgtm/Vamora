@@ -396,6 +396,17 @@ router.post('/team/caregivers/link', ...doctorOnly, async (req, res) => {
     if (caregiver.doctorId && caregiver.doctorId !== req.user.id)
       return res.status(409).json({ status: 'error', message: 'Caregiver is already linked to another doctor.' });
     await caregiver.update({ doctorId: req.user.id });
+    if (req.body.patientId) {
+      const existingLink = await db.PatientCaregiverRelationship.findOne({
+        where: { patientId: req.body.patientId, caregiverId: caregiver.id }
+      });
+      if (!existingLink) {
+        await db.PatientCaregiverRelationship.create({
+          patientId: req.body.patientId,
+          caregiverId: caregiver.id
+        });
+      }
+    }
     res.json({ status: 'success', message: 'Caregiver linked.' });
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });

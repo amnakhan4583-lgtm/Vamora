@@ -282,7 +282,7 @@ export default function DoctorDashboard() {
     setAssigning(true);
     setAssignError('');
     try {
-      await api.post('/doctor/team/caregivers/link', { email: selectedCaregiver.email });
+      await api.post('/doctor/team/caregivers/link', { email: selectedCaregiver.email, patientId: selectedPatient.id });
       setAssignSuccess('Caregiver assigned successfully');
       setAssignCaregiverId('');
       await refreshDetails();
