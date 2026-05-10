@@ -277,10 +277,12 @@ export default function DoctorDashboard() {
 
   async function handleAssignCaregiver() {
     if (!assignCaregiverId) { setAssignError('Please select a caregiver.'); return; }
+    const selectedCaregiver = caregivers.find(cg => String(cg.id) === String(assignCaregiverId));
+    if (!selectedCaregiver) { setAssignError('Selected caregiver not found.'); return; }
     setAssigning(true);
     setAssignError('');
     try {
-      await api.post('/doctor/team/caregivers/link', { patientId: selectedPatient.id, caregiverId: assignCaregiverId });
+      await api.post('/doctor/team/caregivers/link', { patientId: selectedPatient.id, caregiverEmail: selectedCaregiver.email });
       setAssignSuccess('Caregiver assigned successfully');
       setAssignCaregiverId('');
       await refreshDetails();
