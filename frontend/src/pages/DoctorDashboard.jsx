@@ -125,6 +125,7 @@ export default function DoctorDashboard() {
       setDetailsLoading(true);
       const { data } = await api.get(`/doctor/patients/${patient.id}`);
       setDetails(data.data);
+      setSelectedPatient(prev => ({ ...prev, patientId: data.data.patient.id }));
     } catch (err) {
       console.error('Patient details error:', err);
     } finally {
@@ -282,7 +283,7 @@ export default function DoctorDashboard() {
     setAssigning(true);
     setAssignError('');
     try {
-      await api.post('/doctor/team/caregivers/link', { email: selectedCaregiver.email, patientId: selectedPatient.id });
+      await api.post('/doctor/team/caregivers/link', { email: selectedCaregiver.email, patientId: selectedPatient.patientId || selectedPatient.id });
       setAssignSuccess('Caregiver assigned successfully');
       setAssignCaregiverId('');
       await refreshDetails();
