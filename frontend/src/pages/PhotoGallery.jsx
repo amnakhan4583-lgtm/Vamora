@@ -1,15 +1,20 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../services/api';
 import './PhotoGallery.css';
 
+const CATEGORIES = ['All', 'Family', 'Pet', 'Home', 'Memory'];
+
+const CATEGORY_COLORS = {
+  family: '#7b5ea7',
+  pet: '#fb8c00',
+  home: '#43a047',
+  memory: '#1976d2',
+};
+
 export default function PhotoGallery() {
   const [photos, setPhotos] = useState([]);
-  const [caption, setCaption] = useState('');
-  const [captionError, setCaptionError] = useState('');
-  const [recording, setRecording] = useState(null);
-  const [mediaRec, setMediaRec] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('All');
   const [previewPhoto, setPreviewPhoto] = useState(null);
-  const fileInput = useRef();
 
   useEffect(() => { fetchPhotos(); }, []);
 
@@ -22,70 +27,15 @@ export default function PhotoGallery() {
     }
   };
 
-  const handleUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!caption.trim()) {
-      setCaptionError('Please write a caption before uploading.');
-      fileInput.current.value = '';
-      return;
-    }
-    try {
-      setCaptionError('');
-      const fd = new FormData();
-      fd.append('photo', file);
-      fd.append('caption', caption.trim());
-      await api.post('/photos', fd);
-      setCaption('');
-      fetchPhotos();
-    } catch (err) {
-      console.error('Error uploading photo:', err);
-    }
-  };
-
-  const startRecording = async (photoId) => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const rec = new MediaRecorder(stream);
-      const chunks = [];
-      rec.ondataavailable = e => chunks.push(e.data);
-      rec.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        const fd = new FormData();
-        fd.append('voice', blob, 'voice.webm');
-        await api.post('/photos/' + photoId + '/voice', fd);
-        fetchPhotos();
-        stream.getTracks().forEach(t => t.stop());
-      };
-      rec.start();
-      setMediaRec(rec);
-      setRecording(photoId);
-    } catch (err) {
-      console.error('Error starting recording:', err);
-    }
-  };
-
-  const stopRecording = () => {
-    mediaRec?.stop();
-    setRecording(null);
-    setMediaRec(null);
-  };
-
-  const handleDelete = async (photoId) => {
-    if (!window.confirm('Are you sure you want to delete this photo?')) return;
-    try {
-      await api.delete('/photos/' + photoId);
-      fetchPhotos();
-    } catch (err) {
-      console.error('Error deleting photo:', err);
-    }
-  };
-
   const getImageUrl = (filename) => {
     const clean = filename.replace(/\\/g, '/');
     if (clean.startsWith('/')) return clean;
     return '/' + clean;
   };
+
+  const filtered = activeCategory === 'All'
+    ? photos
+    : photos.filter(p => p.category?.toLowerCase() === activeCategory.toLowerCase());
 
   return (
     <div className="gallery-container">
@@ -95,39 +45,37 @@ export default function PhotoGallery() {
         <p className="gallery-subtitle">Your cherished moments, always with you</p>
       </div>
 
-      <div className="upload-section">
-        <div className="upload-row">
-          <input
-            type="text"
-            className="caption-input-field"
-            placeholder="Write a caption for this photo *"
-            value={caption}
-            onChange={e => {
-              setCaption(e.target.value);
-              setCaptionError('');
+      {/* Category Filter Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', margin: '1rem 0' }}>
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
+            style={{
+              padding: '0.45rem 1.1rem',
+              borderRadius: '999px',
+              border: '2px solid #7b5ea7',
+              background: activeCategory === cat ? '#7b5ea7' : 'white',
+              color: activeCategory === cat ? 'white' : '#7b5ea7',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              transition: 'all 0.15s',
             }}
-          />
-          <button className="upload-btn" onClick={() => fileInput.current.click()}>
-            📷 Add Photo
+          >
+            {cat}
           </button>
-          <input ref={fileInput} type="file" accept="image/*" hidden onChange={handleUpload} />
-        </div>
-        {captionError && <p className="caption-error">⚠️ {captionError}</p>}
+        ))}
       </div>
 
-      {photos.length > 0 && (
-        <p className="photo-count">🖼 {photos.length} {photos.length === 1 ? 'Memory' : 'Memories'}</p>
-      )}
-
-      {photos.length === 0 ? (
+      {filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">🌟</div>
-          <p className="empty-text">No memories yet</p>
-          <p className="empty-subtext">Upload your first photo to get started!</p>
+          <div className="empty-icon">💙</div>
+          <p className="empty-text">Your caregiver will add your memories here 💙</p>
         </div>
       ) : (
         <div className="photo-grid">
-          {photos.map(photo => (
+          {filtered.map(photo => (
             <div key={photo.id} className="photo-card">
               <img
                 src={getImageUrl(photo.filename)}
@@ -139,30 +87,21 @@ export default function PhotoGallery() {
               />
               <div className="photo-details">
                 <p className="photo-caption">{photo.caption}</p>
-                <p className="photo-date">
-                  {new Date(photo.takenAt).toLocaleDateString('en-US', {
-                    year: 'numeric', month: 'long', day: 'numeric'
-                  })}
-                </p>
-
-                {photo.voiceNoteUrl && (
-                  <audio controls src={getImageUrl(photo.voiceNoteUrl)} className="voice-player" />
+                {photo.category && (
+                  <span style={{
+                    display: 'inline-block',
+                    background: CATEGORY_COLORS[photo.category] || '#7b5ea7',
+                    color: 'white',
+                    borderRadius: '999px',
+                    padding: '0.2rem 0.7rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    textTransform: 'capitalize',
+                    marginTop: '0.35rem',
+                  }}>
+                    {photo.category}
+                  </span>
                 )}
-
-                <div className="card-actions">
-                  {recording === photo.id ? (
-                    <button className="voice-btn recording" onClick={stopRecording}>
-                      ⏹ Stop Recording
-                    </button>
-                  ) : (
-                    <button className="voice-btn" onClick={() => startRecording(photo.id)}>
-                      {photo.voiceNoteUrl ? '🎙 Replace Memory Note' : '🎙 Add a Memory Note'}
-                    </button>
-                  )}
-                  <button className="delete-btn" onClick={() => handleDelete(photo.id)}>
-                    🗑 Delete Photo
-                  </button>
-                </div>
               </div>
             </div>
           ))}
@@ -211,11 +150,20 @@ export default function PhotoGallery() {
               <p style={{ fontSize: '1.2rem', fontWeight: '700', color: '#2d1f3d', margin: '0 0 0.4rem 0' }}>
                 {previewPhoto.caption}
               </p>
-              <p style={{ fontSize: '0.85rem', color: '#7b5ea7', margin: 0, fontStyle: 'italic' }}>
-                {new Date(previewPhoto.takenAt).toLocaleDateString('en-US', {
-                  year: 'numeric', month: 'long', day: 'numeric'
-                })}
-              </p>
+              {previewPhoto.category && (
+                <span style={{
+                  display: 'inline-block',
+                  background: CATEGORY_COLORS[previewPhoto.category] || '#7b5ea7',
+                  color: 'white',
+                  borderRadius: '999px',
+                  padding: '0.2rem 0.7rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  textTransform: 'capitalize',
+                }}>
+                  {previewPhoto.category}
+                </span>
+              )}
             </div>
           </div>
         </div>

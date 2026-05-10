@@ -13,6 +13,18 @@ export default function CaregiverDashboard() {
   const [detailsLoading, setDetailsLoading] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [memories, setMemories] = useState([]);
+  const [memoriesLoading, setMemoriesLoading] = useState(false);
+  const [memFile, setMemFile] = useState(null);
+  const [memCaption, setMemCaption] = useState('');
+  const [memCategory, setMemCategory] = useState('memory');
+  const [memError, setMemError] = useState('');
+  const [memSuccess, setMemSuccess] = useState('');
+  const [memUploading, setMemUploading] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadCaption, setUploadCaption] = useState('');
+  const [uploadCategory, setUploadCategory] = useState('family');
+  const [uploadMsg, setUploadMsg] = useState('');
 
   const caregiverName = user?.email?.split('@')[0] || 'Caregiver';
 
@@ -47,17 +59,81 @@ export default function CaregiverDashboard() {
     }
   };
 
+  const fetchMemories = async (patientId) => {
+    try {
+      setMemoriesLoading(true);
+      const { data } = await api.get(`/caregiver/patients/${patientId}/photos`);
+      setMemories(data);
+    } catch (err) {
+      console.error('Error fetching memories:', err);
+    } finally {
+      setMemoriesLoading(false);
+    }
+  };
+
+  const handleUploadMemory = async () => {
+    if (!memFile) { setMemError('Please select a photo.'); return; }
+    if (!memCaption.trim()) { setMemError('Caption is required.'); return; }
+    setMemUploading(true);
+    setMemError('');
+    try {
+      const formData = new FormData();
+      formData.append('photo', memFile);
+      formData.append('caption', memCaption.trim());
+      formData.append('category', memCategory);
+      await api.post(`/caregiver/patients/${selectedPatient.id}/photos`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setMemFile(null);
+      setMemCaption('');
+      setMemCategory('memory');
+      setMemSuccess('Memory added!');
+      await fetchMemories(selectedPatient.id);
+      setTimeout(() => setMemSuccess(''), 3000);
+    } catch (err) {
+      setMemError(err.response?.data?.message || 'Upload failed.');
+    } finally {
+      setMemUploading(false);
+    }
+  };
+
+  const handleUploadPhoto = async () => {
+    if (!uploadFile) { setUploadMsg('Please select a photo.'); return; }
+    if (!uploadCaption.trim()) { setUploadMsg('Caption is required.'); return; }
+    const pid = selectedPatient.patientId || selectedPatient.id;
+    try {
+      setUploadMsg('');
+      const formData = new FormData();
+      formData.append('photo', uploadFile);
+      formData.append('caption', uploadCaption.trim());
+      formData.append('category', uploadCategory);
+      await api.post(`/caregiver/patients/${pid}/photos`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setUploadFile(null);
+      setUploadCaption('');
+      setUploadCategory('family');
+      setUploadMsg('Memory added!');
+      fetchPatientDetails(pid);
+      setTimeout(() => setUploadMsg(''), 3000);
+    } catch (err) {
+      setUploadMsg(err.response?.data?.message || 'Upload failed.');
+    }
+  };
+
   const handleViewPatient = (patient) => {
     setSelectedPatient(patient);
-    fetchPatientDetails(patient.id);
+    const pid = patient.patientId || patient.id;
+    fetchPatientDetails(pid);
   };
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
+    const pid = selectedPatient.patientId || selectedPatient.id;
     try {
-      await api.post(`/caregiver/patients/${selectedPatient.id}/notes`, { note: newNote });
+      await api.post(`/caregiver/patients/${pid}/notes`, { note: newNote });
       setNewNote('');
-      fetchPatientDetails(selectedPatient.id);
+      fetchPatientDetails(pid);
     } catch (err) {
       console.error('Error adding note:', err);
     }
@@ -65,9 +141,10 @@ export default function CaregiverDashboard() {
 
   const handleDeleteNote = async (noteId) => {
     if (!window.confirm('Delete this note?')) return;
+    const pid = selectedPatient.patientId || selectedPatient.id;
     try {
       await api.delete(`/caregiver/notes/${noteId}`);
-      fetchPatientDetails(selectedPatient.id);
+      fetchPatientDetails(pid);
     } catch (err) {
       console.error('Error deleting note:', err);
     }
@@ -135,7 +212,7 @@ export default function CaregiverDashboard() {
     return (
       <div className="cg-container">
         <div className="cg-detail-header">
-          <button className="cg-back-btn" onClick={() => { setSelectedPatient(null); setPatientDetails(null); }}>
+          <button className="cg-back-btn" onClick={() => { setSelectedPatient(null); setPatientDetails(null); setMemories([]); setMemError(''); setMemSuccess(''); setUploadFile(null); setUploadCaption(''); setUploadCategory('family'); setUploadMsg(''); }}>
             ← Back to Dashboard
           </button>
           <h1 className="cg-detail-title">{patientDetails.patient.name}</h1>
@@ -293,6 +370,80 @@ export default function CaregiverDashboard() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Memories */}
+        <div className="cg-section">
+          <h2 className="cg-section-title">📸 Memories</h2>
+
+          {/* Existing photos grid */}
+          {!patientDetails.photos || patientDetails.photos.length === 0 ? (
+            <p className="cg-empty">No memories added yet. Upload the first one below 💙</p>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+              {patientDetails.photos.map(photo => {
+                const src = photo.url || (photo.filename
+                  ? (photo.filename.startsWith('/') ? photo.filename : '/' + photo.filename.replace(/\\/g, '/'))
+                  : '');
+                return (
+                  <div key={photo.id} style={{ borderRadius: '12px', overflow: 'hidden', background: '#f8f5ff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
+                    <img
+                      src={src}
+                      alt={photo.caption}
+                      style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }}
+                      onError={e => { e.target.src = 'https://via.placeholder.com/160x120?text=Photo'; }}
+                    />
+                    <div style={{ padding: '0.5rem 0.6rem' }}>
+                      <p style={{ fontSize: '0.82rem', color: '#2d1f3d', fontWeight: 600, margin: '0 0 0.25rem 0', lineHeight: 1.3 }}>{photo.caption}</p>
+                      {photo.category && (
+                        <span style={{
+                          display: 'inline-block', background: '#7b5ea7', color: 'white',
+                          borderRadius: '999px', padding: '0.15rem 0.55rem',
+                          fontSize: '0.7rem', fontWeight: 600, textTransform: 'capitalize',
+                        }}>{photo.category}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Upload form */}
+          <div className="cg-note-form" style={{ flexDirection: 'column', gap: '0.6rem' }}>
+            <input
+              type="file"
+              accept="image/*"
+              className="cg-input"
+              onChange={e => { setUploadFile(e.target.files[0] || null); setUploadMsg(''); }}
+            />
+            <input
+              type="text"
+              className="cg-input"
+              placeholder="Caption *"
+              value={uploadCaption}
+              onChange={e => { setUploadCaption(e.target.value); setUploadMsg(''); }}
+            />
+            <select
+              className="cg-input"
+              value={uploadCategory}
+              onChange={e => setUploadCategory(e.target.value)}
+            >
+              <option value="family">Family</option>
+              <option value="pet">Pet</option>
+              <option value="home">Home</option>
+              <option value="memory">Memory</option>
+            </select>
+            {uploadMsg && (
+              <p style={{
+                color: uploadMsg === 'Memory added!' ? '#43a047' : '#e53935',
+                fontWeight: 600, fontSize: '0.9rem', margin: 0
+              }}>{uploadMsg}</p>
+            )}
+            <button className="cg-submit-btn" onClick={handleUploadPhoto}>
+              Add Memory
+            </button>
+          </div>
         </div>
       </div>
     );
