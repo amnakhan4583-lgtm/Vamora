@@ -28,9 +28,7 @@ export default function PhotoGallery() {
   };
 
   const getImageUrl = (filename) => {
-    const clean = filename.replace(/\\/g, '/');
-    if (clean.startsWith('/')) return clean;
-    return '/' + clean;
+    return `http://localhost:5000/uploads/photos/${filename}`;
   };
 
   const filtered = activeCategory === 'All'
@@ -83,7 +81,7 @@ export default function PhotoGallery() {
                 className="photo-image"
                 style={{ cursor: 'pointer' }}
                 onClick={() => setPreviewPhoto(photo)}
-                onError={e => { e.target.src = 'https://via.placeholder.com/280x220?text=Photo'; }}
+                onError={e => { e.target.style.display = 'none'; }}
               />
               <div className="photo-details">
                 <p className="photo-caption">{photo.caption}</p>

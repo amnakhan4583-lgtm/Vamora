@@ -382,16 +382,14 @@ export default function CaregiverDashboard() {
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
               {patientDetails.photos.map(photo => {
-                const src = photo.url || (photo.filename
-                  ? (photo.filename.startsWith('/') ? photo.filename : '/' + photo.filename.replace(/\\/g, '/'))
-                  : '');
+                const src = `http://localhost:5000/uploads/photos/${photo.filename}`;
                 return (
                   <div key={photo.id} style={{ borderRadius: '12px', overflow: 'hidden', background: '#f8f5ff', boxShadow: '0 2px 8px rgba(0,0,0,0.08)' }}>
                     <img
                       src={src}
                       alt={photo.caption}
                       style={{ width: '100%', height: '120px', objectFit: 'cover', display: 'block' }}
-                      onError={e => { e.target.src = 'https://via.placeholder.com/160x120?text=Photo'; }}
+                      onError={e => { e.target.style.display = 'none'; }}
                     />
                     <div style={{ padding: '0.5rem 0.6rem' }}>
                       <p style={{ fontSize: '0.82rem', color: '#2d1f3d', fontWeight: 600, margin: '0 0 0.25rem 0', lineHeight: 1.3 }}>{photo.caption}</p>

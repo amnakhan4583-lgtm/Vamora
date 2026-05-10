@@ -397,16 +397,14 @@ router.post('/team/caregivers/link', ...doctorOnly, async (req, res) => {
       return res.status(409).json({ status: 'error', message: 'Caregiver is already linked to another doctor.' });
     await caregiver.update({ doctorId: req.user.id });
     if (req.body.patientId) {
-      const [existing] = await db.sequelize.query(
-        `SELECT id FROM patient_caregiver_relationships WHERE patient_id = :pid AND caregiver_id = :cid`,
+      await db.sequelize.query(
+        `DELETE FROM patient_caregiver_relationships WHERE patient_id = :pid`,
+        { replacements: { pid: req.body.patientId } }
+      );
+      await db.sequelize.query(
+        `INSERT INTO patient_caregiver_relationships (patient_id, caregiver_id, created_at, updated_at) VALUES (:pid, :cid, NOW(), NOW())`,
         { replacements: { pid: req.body.patientId, cid: caregiver.id } }
       );
-      if (existing.length === 0) {
-        await db.sequelize.query(
-          `INSERT INTO patient_caregiver_relationships (patient_id, caregiver_id, created_at, updated_at) VALUES (:pid, :cid, NOW(), NOW())`,
-          { replacements: { pid: req.body.patientId, cid: caregiver.id } }
-        );
-      }
     }
     res.json({ status: 'success', message: 'Caregiver linked.' });
   } catch (err) {
